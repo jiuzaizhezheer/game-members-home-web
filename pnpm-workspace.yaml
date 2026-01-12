@@ -1,2 +1,3 @@
+# 仅构建依赖：这些依赖项仅在构建阶段使用，不会被包含在最终产物中
 onlyBuiltDependencies:
   - esbuild

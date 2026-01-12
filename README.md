@@ -1,4 +1,4 @@
-# GMHS Web 项目结构
+# Game Members Home Web 项目结构
 
 ## 依赖管理约定（重要）
 
@@ -9,7 +9,7 @@
 - 升级依赖：`pnpm add <pkg>@<version>`
 - 只做安装/还原环境：`pnpm install`
 
-## 目录結構
+## 目录结构
 ```
 src/
 ├── app/                    # 应用装配层（入口）

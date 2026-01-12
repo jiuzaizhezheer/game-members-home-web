@@ -1,3 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  /* 注册自定义颜色和样式到 Tailwind v4 主题系统 */
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+  
+  --color-bg-main: var(--color-zinc-50);
+  --color-input-bg: var(--color-white);
+  
+  --background-image-primary-gradient: linear-gradient(135deg, #6366f1 0%, #ec4899 100%); /* Indigo to Pink/Rose style */
+  
+  /* 柔焦扩散阴影 */
+  --shadow-card-lg: 0 8px 30px rgb(0 0 0 / 0.04);
+  /* 内高光 */
+  --shadow-inner-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+}
+
+:root {
+  /* 保留原始变量供直接引用 */
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+  --bg-main: var(--color-zinc-50);
+  --input-bg: #ffffff;
+}

@@ -1,18 +1,20 @@
-import type { Role } from '@/features/user/types'
+/** 角色 */
+export type Role = 'member' | 'merchant' | 'admin'
 
-export type CaptchaOut = {
-  id: string
-  image: string
-}
-
-export type TokenOut = {
-  access_token: string
-  refresh_token: string
-}
-
-export type LoginRequest = {
+/** 登录请求体 */
+export type AuthLoginIn = {
   email: string
   password: string
   role: Role
+}
+
+/** 注册请求体 */
+export type AuthRegisterIn = {
+  username: string
+  email: string
+  password: string
+  role: Role
+  captcha_id: string
+  captcha_code: string
 }
 
