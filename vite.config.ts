@@ -14,11 +14,11 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
     proxy: {
-      // 统一使用 /api 前缀，转发时自动去掉
+      // 统一使用 /api 前缀
       '/api': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        // rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },
