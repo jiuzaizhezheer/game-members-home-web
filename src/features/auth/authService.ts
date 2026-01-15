@@ -16,4 +16,3 @@ export const authService = {
     await authApi.register(payload)
   },
 }
-
