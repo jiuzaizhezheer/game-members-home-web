@@ -15,7 +15,7 @@ export type RequestJsonOptions = {
   body?: unknown
   /** 是否携带认证令牌，默认为 true */
   auth?: boolean
-  /** 
+  /**
    * 是否显示成功提示。
    * 默认逻辑：POST/PUT/PATCH/DELETE 请求会自动显示后端返回的 message。
    * 如果显式传入 true/false，则覆盖默认逻辑。
@@ -27,10 +27,7 @@ export type RequestJsonOptions = {
  * 通用 JSON 请求函数
  * 封装 fetch API，提供统一的请求处理逻辑
  */
-export async function requestJson<T>(
-  path: string,
-  options: RequestJsonOptions = {},
-): Promise<T> {
+export async function requestJson<T>(path: string, options: RequestJsonOptions = {}): Promise<T> {
   // 拼接完整 URL
   const url = path.startsWith('http') ? path : `${baseUrl}${path}`
 
@@ -100,4 +97,3 @@ export async function requestJson<T>(
 
   throw new Error('Invalid response format')
 }
-

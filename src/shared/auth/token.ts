@@ -32,4 +32,3 @@ export function clearTokens(): void {
   clearAccessToken()
   clearRefreshToken()
 }
-

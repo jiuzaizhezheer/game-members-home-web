@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react'
  */
 export function useClickOutside<T extends HTMLElement>(
   ref: React.RefObject<T | null>,
-  handler: (event: MouseEvent) => void
+  handler: (event: MouseEvent) => void,
 ) {
   // 使用 ref 存储最新的 handler，避免 useEffect 依赖 handler 导致频繁重绑定
   const savedHandler = useRef(handler)
@@ -30,7 +30,7 @@ export function useClickOutside<T extends HTMLElement>(
 
     // 绑定全局点击事件
     document.addEventListener('mousedown', handleClickOutside)
-    
+
     // 组件卸载时移除事件绑定，防止内存泄漏
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)

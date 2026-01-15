@@ -2,6 +2,6 @@
   "files": [], // 空数组，因为所有文件都在 references 中指定
   "references": [
     { "path": "./tsconfig.app.json" }, // 用于配置应用源码的 TypeScript 编译选项
-    { "path": "./tsconfig.node.json" }  // 用于配置 Node 端（如构建脚本、Vite 配置等）的 TypeScript 编译选项
+    { "path": "./tsconfig.node.json" } // 用于配置 Node 端（如构建脚本、Vite 配置等）的 TypeScript 编译选项
   ]
 }

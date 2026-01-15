@@ -76,4 +76,3 @@ export function useAuth() {
   if (!ctx) throw new Error('AuthProvider missing')
   return ctx
 }
-

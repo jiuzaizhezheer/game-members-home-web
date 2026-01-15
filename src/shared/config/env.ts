@@ -3,4 +3,3 @@ export function getApiBaseUrl(): string {
   if (typeof url === 'string' && url.trim().length > 0) return url.trim()
   return '/api'
 }
-
