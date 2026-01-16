@@ -8,9 +8,9 @@ export const authApi = {
    * 用户登录
    */
   async login(payload: AuthLoginIn): Promise<AccessTokenOut> {
-    return await requestJson<AccessTokenOut>('/auths/login', { 
-      method: 'POST', 
-      body: payload, 
+    return await requestJson<AccessTokenOut>('/auths/login', {
+      method: 'POST',
+      body: payload,
       auth: false,
     })
   },
