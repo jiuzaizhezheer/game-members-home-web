@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react'
 
-import { clearTokens, getAccessToken, getRefreshToken } from '@/shared/auth/token'
+import { clearAccessToken, getAccessToken } from '@/shared/auth/token'
 
 /**
  * 身份验证状态类型
@@ -8,8 +8,6 @@ import { clearTokens, getAccessToken, getRefreshToken } from '@/shared/auth/toke
 type AuthState = {
   /** 访问令牌 */
   accessToken: string | null
-  /** 刷新令牌 */
-  refreshToken: string | null
 }
 
 /**
@@ -33,7 +31,6 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(() => ({
     accessToken: getAccessToken(),
-    refreshToken: getRefreshToken(),
   }))
 
   /**
@@ -42,7 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshFromStorage = useCallback(() => {
     setState({
       accessToken: getAccessToken(),
-      refreshToken: getRefreshToken(),
     })
   }, [])
 
@@ -50,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * 退出登录：清除本地存储的令牌并重置状态
    */
   const logout = useCallback(() => {
-    clearTokens()
+    clearAccessToken()
     refreshFromStorage()
   }, [refreshFromStorage])
 

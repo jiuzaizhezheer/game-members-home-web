@@ -1,14 +1,14 @@
 import { requestJson } from '@/shared/api/http'
 import type { AuthLoginIn } from '@/features/auth/types'
-import type { TokenOut } from '@/features/common/types'
+import type { AccessTokenOut } from '@/features/common/types'
 import type { AuthRegisterIn } from '@/features/auth/types'
 
 export const authApi = {
   /**
    * 用户登录
    */
-  async login(payload: AuthLoginIn): Promise<TokenOut> {
-    return await requestJson<TokenOut>('/auths/login', {
+  async login(payload: AuthLoginIn): Promise<AccessTokenOut> {
+    return await requestJson<AccessTokenOut>('/auths/login', {
       method: 'POST',
       body: payload,
       auth: false,

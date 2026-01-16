@@ -4,8 +4,7 @@ export type CaptchaOut = {
   image: string
 }
 
-/** Token */
-export type TokenOut = {
+/** Access Token */
+export type AccessTokenOut = {
   access_token: string
-  refresh_token: string
 }
