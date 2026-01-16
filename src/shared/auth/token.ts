@@ -1,34 +1,19 @@
-const ACCESS_TOKEN_KEY = 'gmhw.access_token'
-const REFRESH_TOKEN_KEY = 'gmhw.refresh_token'
+// 将 Access Token 存储在内存中
+let accessToken: string | null = null
 
-// 访问令牌相关
+// 设置 Access Token
 export function setAccessToken(token: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token)
+  accessToken = token
 }
 
+// 获取 Access Token
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY)
+  return accessToken
 }
 
-function clearAccessToken(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY)
+// 清理 Access Token 
+export function clearAccessToken(): void {
+  accessToken = null
 }
 
-// 刷新令牌相关
-export function setRefreshToken(token: string): void {
-  localStorage.setItem(REFRESH_TOKEN_KEY, token)
-}
-
-export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY)
-}
-
-function clearRefreshToken(): void {
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
-}
-
-// 清除所有令牌
-export function clearTokens(): void {
-  clearAccessToken()
-  clearRefreshToken()
-}
+/**Refresh Token 使用 HttpOnly Cookie 管理，JS 无法获取 */
