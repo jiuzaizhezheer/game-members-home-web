@@ -11,7 +11,7 @@ export function getAccessToken(): string | null {
   return accessToken
 }
 
-// 清理 Access Token 
+// 清理 Access Token
 export function clearAccessToken(): void {
   accessToken = null
 }
