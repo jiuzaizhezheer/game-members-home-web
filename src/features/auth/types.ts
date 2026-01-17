@@ -1,7 +1,18 @@
 import { z } from 'zod'
 
+/** 验证码 */
+export type CaptchaOut = {
+  id: string
+  image: string
+}
+
+/** Access Token */
+export type AccessTokenOut = {
+  access_token: string
+}
+
 /** 注册校验 Schema */
-export const RegisterSchema = z.object({
+export const AuthRegisterSchema = z.object({
   username: z
     .string()
     .min(6, { message: '用户名长度至少为6位' })
@@ -21,7 +32,7 @@ export const RegisterSchema = z.object({
 })
 
 /** 角色类型 (从 Schema 自动推导) */
-export type Role = z.infer<typeof RegisterSchema>['role']
+export type Role = z.infer<typeof AuthRegisterSchema>['role']
 
 /** 登录请求体 */
 export type AuthLoginIn = {
@@ -31,4 +42,4 @@ export type AuthLoginIn = {
 }
 
 /** 注册请求体 (从 Schema 自动推导) */
-export type AuthRegisterIn = z.infer<typeof RegisterSchema>
+export type AuthRegisterIn = z.infer<typeof AuthRegisterSchema>

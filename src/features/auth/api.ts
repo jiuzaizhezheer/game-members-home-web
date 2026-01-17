@@ -1,9 +1,17 @@
 import { requestJson } from '@/shared/api/http'
-import type { AuthLoginIn } from '@/features/auth/types'
-import type { AccessTokenOut } from '@/features/common/types'
-import type { AuthRegisterIn } from '@/features/auth/types'
+import type { AuthLoginIn, AuthRegisterIn, AccessTokenOut, CaptchaOut } from '@/features/auth/types'
 
 export const authApi = {
+  /**
+   * 获取验证码
+   */
+  async getCaptcha(): Promise<CaptchaOut> {
+    return await requestJson<CaptchaOut>('/auths/captcha', {
+      method: 'GET',
+      auth: false,
+    })
+  },
+
   /**
    * 用户登录
    */
