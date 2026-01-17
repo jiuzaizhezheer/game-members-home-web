@@ -1,9 +1,14 @@
-import type { AuthLoginIn, AuthRegisterIn } from '@/features/auth/types'
+import type { AuthLoginIn, AuthRegisterIn, CaptchaOut } from '@/features/auth/types'
 import { authApi } from '@/features/auth/api'
 import { setAccessToken } from '@/shared/auth/token'
 
 /** 认证服务 */
 export const authService = {
+  /** 获取验证码 */
+  async getCaptcha(): Promise<CaptchaOut> {
+    return await authApi.getCaptcha()
+  },
+
   /** 用户登录 */
   async login(payload: AuthLoginIn): Promise<void> {
     const access_token_out = await authApi.login(payload)
