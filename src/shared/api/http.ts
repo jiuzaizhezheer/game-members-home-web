@@ -22,7 +22,7 @@ async function refreshAccessToken(): Promise<string> {
     try {
       const res = await fetch(`${baseUrl}/auths/refresh`, {
         method: 'POST',
-        credentials: 'include', // 👈 携带 Cookie
+        credentials: 'include', // 携带 Cookie
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
@@ -30,14 +30,14 @@ async function refreshAccessToken(): Promise<string> {
       })
 
       if (!res.ok) {
-        throw new Error('登录已过期，请重新登录')
+        throw new Error()
       }
 
       const payload = await res.json()
       const newAccessToken = payload.data?.access_token
 
       if (!newAccessToken) {
-        throw new Error('无效的令牌响应')
+        throw new Error()
       }
 
       // 更新内存中的 access_token
@@ -46,10 +46,10 @@ async function refreshAccessToken(): Promise<string> {
     } catch (error) {
       // 刷新失败，清除 Token 并抛出错误
       clearAccessToken()
-      // 这里可以选择是否强制跳转登录页，通常交给 RouterGuard 处理，但如果不处理会很奇怪
+      // 强制跳转登录页
       if (window.location.pathname !== '/login') {
-        // 可选：toast.error('登录已过期，请重新登录')
-        // window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname)
+        toast.error('登录已过期，请重新登录')
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname)
       }
       throw error
     } finally {
@@ -76,7 +76,13 @@ export type RequestJsonOptions = {
    * 如果显式传入 true/false，则覆盖默认逻辑。
    */
   showSuccess?: boolean
-  /** 内部使用：是否是重试请求 */
+  /** 内部使用，是否是重试请求, 避免以下极端情况:
+   * 请求 → 401 → refreshAccessToken() 成功 → 重试
+   *         ↓
+   *      重试后又 401（服务器问题 / token 立即失效）
+   *         ↓
+   *      如果没有 _retry 检查 → 又刷新 → 又重试 → 无限循环
+   */
   _retry?: boolean
 }
 
@@ -84,7 +90,7 @@ export type RequestJsonOptions = {
  * 通用 JSON 请求函数
  * 封装 fetch API，提供统一的请求处理逻辑
  */
-export async function requestJson<T>(path: string, options: RequestJsonOptions = {}): Promise<T> {
+export async function requestJson<T>(path: string, options: RequestJsonOptions): Promise<T> {
   // 拼接完整 URL
   const url = path.startsWith('http') ? path : `${baseUrl}${path}`
 
@@ -101,19 +107,15 @@ export async function requestJson<T>(path: string, options: RequestJsonOptions =
   // 默认携带认证令牌（除非显式设置 auth: false）
   if (options.auth !== false) {
     // 尝试获取 access_token
-    let token = getAccessToken()
+    let access_token = getAccessToken()
 
-    // 如果内存中没有 token 且是首次请求（非登录/注册接口），尝试刷新一次
+    // 如果内存中没有 token 且是首次请求（非登录/注册页面），尝试刷新一次
     // 这种情况常发生在页面刷新后，内存被清空，但 Cookie 还在
-    if (!token && !path.includes('/login') && !path.includes('/register') && !options._retry) {
-      try {
-        token = await refreshAccessToken()
-      } catch {
-        // 忽略刷新失败，继续请求（将会收到 401）
-      }
+    if (!access_token && !options._retry) {
+      access_token = await refreshAccessToken()
     }
 
-    if (token) headers.Authorization = `Bearer ${token}`
+    if (access_token) headers.Authorization = `Bearer ${access_token}`
   }
 
   // 发送 HTTP 请求
@@ -121,7 +123,6 @@ export async function requestJson<T>(path: string, options: RequestJsonOptions =
     method: options.method ?? 'GET',
     headers,
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    credentials: 'include', // 👈 关键：允许携带 Cookie（用于 refresh_token）
   })
 
   // 解析响应内容
@@ -129,43 +130,23 @@ export async function requestJson<T>(path: string, options: RequestJsonOptions =
   const isJson = contentType.includes('application/json')
   const payload = isJson ? await res.json() : null
 
-  // 🔄 处理 401 错误 - 自动刷新 Token
-  if (res.status === 401 && !options._retry) {
-    // 如果是登录接口本身的 401，不进行刷新
-    if (path.includes('/login')) {
-      // pass through to error handler
-    } else {
-      try {
-        // 刷新 access_token
-        await refreshAccessToken()
+  // 处理 401 错误 - 自动刷新 Token
+  if (res.status === 401 && !options._retry && !path.includes('/login')) {
+    // 刷新 access_token
+    await refreshAccessToken()
 
-        // 重试原请求（递归调用）
-        // 注意：这里不需要手动设置 header，因为 requestJson 内部会重新调用 getAccessToken()
-        return requestJson<T>(path, { ...options, _retry: true })
-      } catch {
-        // 刷新失败，走下面的错误处理流程
-      }
-    }
-  }
-
-  // 处理错误响应（非 2xx 状态码）
-  if (!res.ok) {
+    // 重试原请求（递归调用）
+    // 注意：这里不需要手动设置 header，因为 requestJson 内部会重新调用 getAccessToken()
+    return requestJson<T>(path, { ...options, _retry: true })
+  } else if (!res.ok) {
+    // 处理错误响应（非 2xx 状态码）且不为 401 或 /login
     // 优先使用后端返回的错误信息，否则使用默认错误信息
     const message =
       payload && typeof payload === 'object' && 'message' in payload
         ? String((payload as { message: unknown }).message)
         : `Request failed: ${res.status}`
 
-    // 避免对 401 报错弹窗过于频繁（如果刷新失败的话），或者可以保留
-    if (res.status !== 401 || path.includes('/login')) {
-      setTimeout(() => toast.error(message), 0)
-    }
-
-    // 💡 添加这一行，可以在浏览器控制台看到完整的调试信息
-    console.error(`[API Error] ${options.method || 'GET'} ${path}:`, {
-      status: res.status,
-      payload,
-    })
+    setTimeout(() => toast.error(message), 0)
 
     throw new Error(message)
   }
@@ -187,8 +168,6 @@ export async function requestJson<T>(path: string, options: RequestJsonOptions =
     return (payload as { data: T }).data
   }
 
-  // 某些接口可能没有 data 字段 (如 response_model=SuccessResponse[None])
-  // 这种情况下如果成功了，可以返回 payload 本身或者 undefined，视具体约定
-  // 你的 SuccessResponse 包含 message, data, code，如果没有 data，通常意味着返回 null 或 undefined
-  return undefined as unknown as T
+  // 响应缺少 data 字段，不符合 SuccessResponse 约定
+  throw new Error('Invalid response: missing data field')
 }

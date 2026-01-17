@@ -16,7 +16,6 @@ import { ZodError } from 'zod'
 
 import type { Role } from '@/features/auth/types'
 import { authService } from '@/features/auth/authService'
-import { commonApi } from '@/features/common/api'
 import { ROLE_ICONS, ROLE_OPTIONS } from '@/features/auth/constants'
 import { useClickOutside } from '@/hooks/useClickOutside'
 import { RegisterSchema } from '@/features/auth/types'
@@ -70,7 +69,7 @@ export default function RegisterPage() {
   const fetchCaptcha = useCallback(async () => {
     setCaptchaLoading(true)
     try {
-      const data = await commonApi.getCaptcha()
+      const data = await authService.getCaptcha()
       setCaptchaId(data.id)
       setCaptchaImage(data.image)
       setCaptchaCode('') // 刷新后清空输入

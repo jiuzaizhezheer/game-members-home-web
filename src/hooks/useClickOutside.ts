@@ -22,7 +22,7 @@ export function useClickOutside<T extends HTMLElement>(
      * 点击事件处理器
      */
     function handleClickOutside(event: MouseEvent) {
-      // 如果点击的目标不在 ref 关联的元素内，则触发回调
+      // 如果点击的目标不在 ref 关联的元素内，则触发传入的回调函数
       if (ref.current && event.target instanceof Node && !ref.current.contains(event.target)) {
         savedHandler.current(event)
       }
