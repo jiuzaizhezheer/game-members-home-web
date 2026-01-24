@@ -1,0 +1,5 @@
+export { default as MerchantLayout } from './MerchantLayout'
+export { default as MerchantWorkbench } from './workbench'
+export { default as ProductList } from './product/list'
+export { default as ProductDetail } from './product/detail'
+export { default as MerchantSettings } from './profile'

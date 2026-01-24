@@ -26,7 +26,7 @@ export default function AuthLayout() {
 
   // 判断跳转方向：如果是去注册页则视为"前进"(下到上)，否则视为"后退"(上到下)
   // 这种简单的逻辑适用于只有两个页面相互切换的场景
-  const direction = location.pathname === '/register' ? 1 : -1
+  const direction = location.pathname === '/auth/register' ? 1 : -1
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-bg-main px-4 font-sans text-zinc-900">

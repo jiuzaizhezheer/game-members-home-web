@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Mail,
@@ -6,19 +6,20 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
-  RefreshCw,
   Eye,
   EyeOff,
-  ArrowRight,
+  User,
+  KeyRound,
+  RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { ZodError } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 
-import type { Role } from '@/features/auth/types'
-import { authService } from '@/features/auth/authService'
+import { authService } from '@/features/auth/service'
 import { ROLE_ICONS, ROLE_OPTIONS } from '@/features/auth/constants'
 import { useClickOutside } from '@/hooks/useClickOutside'
-import { RegisterSchema } from '@/features/auth/types'
+import { AuthRegisterSchema, type AuthRegisterIn, type Role } from '@/features/auth/types'
 
 /**
  * 注册页面组件
@@ -31,27 +32,32 @@ export default function RegisterPage() {
   /** 下拉框容器引用 */
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // ==================== 表单状态 ====================
-  /** 用户名 */
-  const [username, setUsername] = useState('')
-  /** 用户邮箱 */
-  const [email, setEmail] = useState('')
-  /** 用户密码 */
-  const [password, setPassword] = useState('')
-  /** 用户角色 */
-  const [role, setRole] = useState<Role>('member')
-  /** 验证码 ID */
-  const [captchaId, setCaptchaId] = useState('')
-  /** 验证码输入值 */
-  const [captchaCode, setCaptchaCode] = useState('')
+  // ==================== React Hook Form ====================
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<AuthRegisterIn>({
+    resolver: zodResolver(AuthRegisterSchema),
+    defaultValues: {
+      username: '',
+      email: '',
+      password: '',
+      role: 'member',
+      captcha_id: '',
+      captcha_code: '',
+    },
+  })
+
+  const role = watch('role')
 
   // ==================== UI 状态 ====================
   /** 验证码图片 (Base64) */
   const [captchaImage, setCaptchaImage] = useState('')
   /** 是否正在加载验证码 */
   const [captchaLoading, setCaptchaLoading] = useState(false)
-  /** 是否正在提交 */
-  const [loading, setLoading] = useState(false)
   /** 下拉框是否开启 */
   const [isSelectOpen, setIsSelectOpen] = useState(false)
   /** 密码是否可见 */
@@ -70,62 +76,29 @@ export default function RegisterPage() {
     setCaptchaLoading(true)
     try {
       const data = await authService.getCaptcha()
-      setCaptchaId(data.id)
+      setValue('captcha_id', data.id)
       setCaptchaImage(data.image)
-      setCaptchaCode('') // 刷新后清空输入
+      setValue('captcha_code', '') // 刷新后清空输入
     } catch (err) {
       console.error('Failed to fetch captcha:', err)
+      toast.error('获取验证码失败')
     } finally {
       setCaptchaLoading(false)
     }
-  }, [])
+  }, [setValue])
 
   /**
    * 处理注册表单提交
    */
-  async function handleRegister(e: React.FormEvent) {
-    e.preventDefault()
-
-    if (!captchaId) {
-      toast.error('请先获取验证码')
-      return
-    }
-
-    setLoading(true)
+  async function handleRegister(data: AuthRegisterIn) {
     try {
-      // 1. 构造表单数据
-      const formData = {
-        username,
-        email,
-        password,
-        role,
-        captcha_id: captchaId,
-        captcha_code: captchaCode,
-      }
-
-      // 2. 使用 Zod Schema 进行校验
-      // .parse() 会在校验失败时抛出异常，这里我们用 parse 而不是 safeParse，因为下面有 catch 块统一处理
-      RegisterSchema.parse(formData)
-
-      // 3. 校验通过，发起请求
-      await authService.register(formData)
-
+      await authService.register(data)
       toast.success('注册成功，请登录')
-      // 注册成功跳转到登录页
-      navigate('/login')
+      navigate('/auth/login')
     } catch (err) {
-      if (err instanceof ZodError) {
-        // 如果是校验错误，显示第一条错误信息
-        const firstError = err.issues[0]?.message || '表单校验失败'
-        toast.error(firstError)
-      } else {
-        // 其他错误（如网络错误、后端报错）
-        console.error('Register failed:', err)
-        // 注册失败通常需要刷新验证码
-        fetchCaptcha()
-      }
-    } finally {
-      setLoading(false)
+      console.error('Register failed:', err)
+      // 注册失败通常需要刷新验证码
+      fetchCaptcha()
     }
   }
 
@@ -147,7 +120,7 @@ export default function RegisterPage() {
             <p className="mt-1 text-sm text-zinc-500">请填写以下信息完成注册</p>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-3">
+          <form onSubmit={handleSubmit(handleRegister)} className="space-y-3" autoComplete="off">
             {/* 角色选择 */}
             <div className="space-y-2">
               <div className="text-sm font-medium text-zinc-700">当前身份</div>
@@ -182,7 +155,7 @@ export default function RegisterPage() {
                             key={option.value}
                             type="button"
                             onClick={() => {
-                              setRole(option.value as Role)
+                              setValue('role', option.value as Role)
                               setIsSelectOpen(false)
                             }}
                             className={`group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
@@ -224,56 +197,69 @@ export default function RegisterPage() {
 
             {/* 用户名输入 */}
             <div className="space-y-2">
-              <div className="text-sm font-medium text-zinc-700">用户名</div>
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-zinc-700">用户名</div>
+                {errors.username && (
+                  <span className="text-xs text-rose-500">{errors.username.message}</span>
+                )}
+              </div>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-400">
-                  <RoleIcon size={20} />
+                  <User size={20} />
                 </div>
                 <input
+                  {...register('username')}
                   type="text"
-                  required
-                  placeholder="就在这这er"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="h-10 w-full rounded-xl bg-zinc-50 pl-12 pr-4 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ring-black/5"
+                  autoComplete="off"
+                  placeholder="请输入用户名"
+                  className={`h-10 w-full rounded-xl bg-zinc-50 pl-12 pr-4 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ${errors.username ? 'ring-rose-200 focus:ring-rose-500/20' : 'ring-black/5'}`}
                 />
               </div>
             </div>
 
             {/* 邮箱输入 */}
             <div className="space-y-2">
-              <div className="text-sm font-medium text-zinc-700">邮箱</div>
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-zinc-700">邮箱</div>
+                {errors.email && (
+                  <span className="text-xs text-rose-500">{errors.email.message}</span>
+                )}
+              </div>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-400">
                   <Mail size={20} />
                 </div>
                 <input
-                  type="email"
-                  required
-                  // autoComplete="off"
-                  placeholder="user@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-10 w-full rounded-xl bg-zinc-50 pl-12 pr-4 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ring-black/5"
+                  {...register('email')}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="请输入您的邮箱"
+                  className={`h-10 w-full rounded-xl bg-zinc-50 pl-12 pr-4 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ${errors.email ? 'ring-rose-200 focus:ring-rose-500/20' : 'ring-black/5'}`}
                 />
               </div>
             </div>
 
             {/* 密码输入 */}
             <div className="space-y-2">
-              <div className="text-sm font-medium text-zinc-700">密码</div>
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-zinc-700">密码</div>
+                {errors.password && (
+                  <span className="text-xs text-rose-500">{errors.password.message}</span>
+                )}
+              </div>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-400">
                   <Lock size={20} />
                 </div>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  autoComplete="new-password"
-                  placeholder="hzy123456"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-10 w-full rounded-xl bg-zinc-50 pl-12 pr-12 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ring-black/5"
+                  {...register('password')}
+                  type="text"
+                  autoComplete="off"
+                  style={
+                    { WebkitTextSecurity: showPassword ? 'none' : 'disc' } as React.CSSProperties
+                  }
+                  placeholder="请输入您的密码"
+                  className={`h-10 w-full rounded-xl bg-zinc-50 pl-12 pr-12 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ${errors.password ? 'ring-rose-200 focus:ring-rose-500/20' : 'ring-black/5'}`}
                 />
                 <button
                   type="button"
@@ -285,57 +271,72 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* 验证码 */}
+            {/* 验证码输入 */}
             <div className="space-y-2">
-              <div className="text-sm font-medium text-zinc-700">验证码</div>
-              <div className="flex gap-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-zinc-700">验证码</div>
+                {errors.captcha_code && (
+                  <span className="text-xs text-rose-500">{errors.captcha_code.message}</span>
+                )}
+              </div>
+              <div className="flex gap-2">
                 <div className="relative flex-1">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-400">
+                    <KeyRound size={20} />
+                  </div>
                   <input
+                    {...register('captcha_code')}
                     type="text"
-                    required
+                    autoComplete="off"
+                    maxLength={6}
                     placeholder="请输入验证码"
-                    value={captchaCode}
-                    onChange={(e) => setCaptchaCode(e.target.value)}
-                    className="h-10 w-full rounded-xl bg-zinc-50 px-4 text-base text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ring-black/5"
+                    className={`h-10 w-full rounded-xl bg-zinc-50 pl-12 pr-4 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ${errors.captcha_code ? 'ring-rose-200 focus:ring-rose-500/20' : 'ring-black/5'}`}
                   />
-                </div>
-                <div className="relative h-10 w-32 shrink-0 overflow-hidden rounded-xl bg-indigo-50 ring-1 ring-black/5">
-                  {captchaImage ? (
-                    <img src={captchaImage} alt="验证码" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center gap-1 text-xs font-medium text-zinc-900/80 select-none">
-                      <span>点击右侧获取</span>
-                      <ArrowRight size={20} />
-                    </div>
-                  )}
                 </div>
                 <button
                   type="button"
                   onClick={fetchCaptcha}
                   disabled={captchaLoading}
-                  className="flex h-10 w-12 shrink-0 items-center justify-center rounded-xl bg-zinc-50 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 ring-1 ring-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="group relative flex h-10 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-black/5 transition-all hover:bg-zinc-100 active:scale-95 disabled:opacity-50"
+                  title="点击刷新验证码"
                 >
-                  <RefreshCw size={20} className={captchaLoading ? 'animate-spin' : ''} />
+                  {captchaLoading ? (
+                    <RefreshCw size={20} className="animate-spin text-zinc-400" />
+                  ) : captchaImage ? (
+                    <img
+                      src={captchaImage}
+                      alt="captcha"
+                      className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
+                    />
+                  ) : (
+                    <span className="text-xs font-medium text-zinc-500 transition-colors group-hover:text-zinc-900">
+                      获取验证码
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
 
             {/* 提交按钮 */}
-            <div className="space-y-3 pt-2">
+            <div className="pt-2">
               <button
                 type="submit"
-                disabled={loading}
-                className="h-12 w-full rounded-full bg-zinc-900 text-base font-semibold text-white shadow-lg shadow-zinc-900/10 transition-all hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+                disabled={isSubmitting}
+                className="h-12 w-full rounded-full bg-zinc-900 text-base font-semibold text-white shadow-lg shadow-zinc-900/10 transition-all hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {loading ? '注册中...' : '立即注册'}
+                {isSubmitting ? '注册中...' : '注册'}
               </button>
+            </div>
 
+            {/* 跳转登录 */}
+            <div className="pt-1 text-center text-sm">
+              <span className="text-zinc-500">已有账号？</span>{' '}
               <button
                 type="button"
-                onClick={() => navigate('/login')}
-                className="h-12 w-full rounded-full border border-transparent bg-zinc-100 text-base font-semibold text-zinc-600 transition-all hover:bg-zinc-200 hover:text-zinc-900"
+                onClick={() => navigate('/auth/login')}
+                className="font-semibold text-indigo-600 hover:underline"
               >
-                返回
+                返回登录
               </button>
             </div>
           </form>
