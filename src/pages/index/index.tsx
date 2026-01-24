@@ -20,7 +20,7 @@ export default function WelcomePage() {
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, type: 'spring' }}
-          className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-50 to-white shadow-xl shadow-indigo-100 ring-1 ring-indigo-50"
+          className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-50 to-white shadow-xl shadow-indigo-100 ring-1 ring-indigo-50"
         >
           <Gamepad2 className="h-10 w-10 text-indigo-600" />
         </motion.div>
@@ -35,7 +35,7 @@ export default function WelcomePage() {
             <Sparkles size={20} className="text-amber-500" />
             <span>全新一代游戏会员平台</span>
           </span>
-          <h1 className="bg-gradient-to-b from-zinc-900 to-zinc-600 bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-7xl">
+          <h1 className="bg-linear-to-b from-zinc-900 to-zinc-600 bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-7xl">
             游戏生活，
             <br className="hidden sm:block" />
             <span className="text-indigo-600">触手可及</span>
