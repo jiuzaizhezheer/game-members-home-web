@@ -3,18 +3,22 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   Package,
+  ShoppingBag,
   Store,
   LogOut,
   ChevronLeft,
   ChevronRight,
   Menu,
+  UserCircle,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { clearAccessToken } from '@/shared/auth/token'
 
 const SIDEBAR_ITEMS = [
   { icon: LayoutDashboard, label: '工作台', path: '/merchant/workbench' },
+  { icon: ShoppingBag, label: '订单管理', path: '/merchant/order/list' },
   { icon: Package, label: '商品管理', path: '/merchant/product/list' },
+  { icon: UserCircle, label: '个人中心', path: '/merchant/account' },
   { icon: Store, label: '店铺设置', path: '/merchant/settings' },
 ]
 
@@ -31,7 +35,7 @@ export default function MerchantLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50/50 text-zinc-900">
+    <div className="flex h-screen overflow-hidden bg-gray-50/50 text-zinc-900">
       {/* Mobile Menu Backdrop */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -117,7 +121,7 @@ export default function MerchantLayout() {
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-x-hidden">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth">
         {/* Mobile Header */}
         <div className="flex h-16 items-center border-b border-zinc-200 bg-white px-4 shadow-sm lg:hidden">
           <button

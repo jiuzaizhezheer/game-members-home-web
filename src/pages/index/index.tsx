@@ -53,7 +53,7 @@ export default function WelcomePage() {
           className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
         >
           <button
-            onClick={() => navigate('/auth/login')}
+            onClick={() => navigate('/member')}
             className="group relative inline-flex items-center gap-2 rounded-full bg-zinc-900 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-zinc-900/20 transition-all hover:scale-105 hover:bg-zinc-800 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2"
           >
             立即探索

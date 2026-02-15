@@ -4,12 +4,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Store, Phone, FileText, Save, Loader2, Camera } from 'lucide-react'
 
+import { commonApi } from '@/features/common/api'
 import { merchantService } from '@/features/merchant/service'
 import { MerchantUpdateSchema, type MerchantUpdateIn } from '@/features/merchant/types'
+import { getFileUrl } from '@/shared/utils/file'
 
 export default function MerchantSettings() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [merchantId, setMerchantId] = useState<string>('')
 
   const form = useForm<MerchantUpdateIn>({
@@ -18,8 +21,12 @@ export default function MerchantSettings() {
       shop_name: '',
       contact_phone: '',
       shop_desc: '',
+      logo_url: '',
     },
   })
+
+  // 监听 Logo 变化显示预览
+  const logoUrl = form.watch('logo_url')
 
   // 加载数据
   useEffect(() => {
@@ -32,6 +39,7 @@ export default function MerchantSettings() {
           shop_name: merchant.shop_name,
           contact_phone: merchant.contact_phone || '',
           shop_desc: merchant.shop_desc || '',
+          logo_url: merchant.logo_url || '',
         })
       } catch (error) {
         console.error(error)
@@ -44,14 +52,34 @@ export default function MerchantSettings() {
     fetchMerchant()
   }, [form])
 
+  const onLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    try {
+      const { url } = await commonApi.uploadFile(file)
+      // 处理相对路径，如果是以 / 开头且没有协议，拼接完整的 API 地址（或者让前端全局处理）
+      // 这里暂时存储原始返回的 URL，假设后端静态资源已挂载
+      form.setValue('logo_url', url, { shouldDirty: true })
+      toast.success('Logo 上传成功')
+    } catch (error) {
+      console.error(error)
+      toast.error('上传失败')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   const onSubmit = async (data: MerchantUpdateIn) => {
     setIsSubmitting(true)
     try {
       await merchantService.update(merchantId, data)
       toast.success('店铺信息更新成功')
+      form.reset(data) // 重置 dirty 状态
     } catch (error) {
       console.error(error)
-      toast.error('更新失败')
+      toast.error('保存失败')
     } finally {
       setIsSubmitting(false)
     }
@@ -72,7 +100,10 @@ export default function MerchantSettings() {
         <p className="mt-1 text-sm text-zinc-500">管理您的店铺基本资料和对外展示信息。</p>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form
+        onSubmit={form.handleSubmit(onSubmit, (errors) => console.log('Form Errors:', errors))}
+        className="space-y-5"
+      >
         {/* 主要信息卡片 */}
         <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex items-center gap-2 pb-4">
@@ -83,23 +114,50 @@ export default function MerchantSettings() {
           </div>
 
           <div className="space-y-5">
-            {/* Logo Upload Placeholder */}
+            {/* Logo Upload */}
             <div className="flex items-center gap-5">
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-50 group cursor-pointer hover:border-indigo-500 transition-colors">
-                <div className="flex h-full w-full items-center justify-center text-zinc-400 group-hover:text-indigo-500">
-                  <Camera size={20} />
+              <div className="relative group overflow-hidden rounded-full cursor-pointer transition-all active:scale-95">
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-dashed border-zinc-200 bg-zinc-50 group-hover:border-indigo-500 transition-colors">
+                  {logoUrl ? (
+                    <img
+                      src={getFileUrl(logoUrl)}
+                      alt="Logo"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-zinc-400 group-hover:text-indigo-500">
+                      {isUploading ? <Loader2 className="animate-spin" /> : <Camera size={24} />}
+                    </div>
+                  )}
                 </div>
-                {/* Simulated Upload Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
-                  更换Logo
-                </div>
+
+                {/* Upload Overlay */}
+                {!isUploading && (
+                  <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 cursor-pointer">
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={onLogoUpload}
+                      disabled={isUploading}
+                    />
+                    更换 LOGO
+                  </label>
+                )}
+
+                {/* Upload Loading Overlay */}
+                {isUploading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/60">
+                    <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+                  </div>
+                )}
               </div>
+
               <div className="space-y-1">
                 <h3 className="text-sm font-medium text-zinc-900">店铺 Logo</h3>
-                <p className="text-sm text-zinc-500">建议尺寸 400x400px，支持 JPG、PNG。</p>
-                <span className="inline-flex rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-500">
-                  暂未开放上传
-                </span>
+                <p className="text-xs text-zinc-500 max-w-[200px]">
+                  展示在店铺首页和商品详情页。推荐透明底 PNG，尺寸 400x400px。
+                </p>
               </div>
             </div>
 

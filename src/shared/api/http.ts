@@ -46,10 +46,13 @@ async function refreshAccessToken(): Promise<string> {
     } catch (error) {
       // 刷新失败，清除 Token 并抛出错误
       clearAccessToken()
+      // 通知 AuthContext 更新状态
+      window.dispatchEvent(new CustomEvent('auth:logout'))
       // 强制跳转登录页
-      if (window.location.pathname !== '/login') {
+      if (!window.location.pathname.startsWith('/auth/login')) {
         toast.error('登录已过期，请重新登录')
-        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname)
+        window.location.href =
+          '/auth/login?redirect=' + encodeURIComponent(window.location.pathname)
       }
       throw error
     } finally {
@@ -99,8 +102,8 @@ export async function requestJson<T>(path: string, options: RequestJsonOptions):
     Accept: 'application/json',
   }
 
-  // 如果有请求体，设置 Content-Type 为 JSON
-  if (options.body !== undefined) {
+  // 如果有请求体，且不是 FormData，设置 Content-Type 为 JSON
+  if (options.body !== undefined && !(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
   }
 
@@ -118,11 +121,20 @@ export async function requestJson<T>(path: string, options: RequestJsonOptions):
     if (access_token) headers.Authorization = `Bearer ${access_token}`
   }
 
+  // logout 接口需要携带 Cookie
+  const needsCredentials = path.includes('/logout')
+
   // 发送 HTTP 请求
   const res = await fetch(url, {
     method: options.method ?? 'GET',
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    credentials: needsCredentials ? 'include' : 'same-origin',
+    body:
+      options.body === undefined
+        ? undefined
+        : options.body instanceof FormData
+          ? options.body
+          : JSON.stringify(options.body),
   })
 
   // 解析响应内容

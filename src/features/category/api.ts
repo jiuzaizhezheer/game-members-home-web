@@ -1,10 +1,10 @@
 import { requestJson } from '@/shared/api/http'
-import type { Category } from '@/features/category/types'
+import type { CategoryOut } from './types'
 
 export const categoryApi = {
   /** 获取所有分类 */
-  async getAll(): Promise<Category[]> {
-    return await requestJson<Category[]>('/categories/', {
+  async getAll(): Promise<CategoryOut[]> {
+    return await requestJson<CategoryOut[]>('/categories/', {
       method: 'GET',
     })
   },

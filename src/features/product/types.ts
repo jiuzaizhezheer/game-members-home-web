@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /** 商品信息 */
-export type Product = {
+export type ProductOut = {
   id: string
   merchant_id: string
   name: string
@@ -13,11 +13,34 @@ export type Product = {
   image_url: string | null
   views_count: number
   sales_count: number
+  category_ids: string[]
 }
+
+/** 公开商品信息 (用户端) */
+export type ProductPublicOut = Pick<
+  ProductOut,
+  | 'id'
+  | 'merchant_id'
+  | 'name'
+  | 'description'
+  | 'price'
+  | 'stock'
+  | 'image_url'
+  | 'sales_count'
+  | 'category_ids'
+>
 
 /** 商品列表响应 */
 export type ProductListOut = {
-  items: Product[]
+  items: ProductOut[]
+  total: number
+  page: number
+  page_size: number
+}
+
+/** 公开商品列表响应 */
+export type ProductPublicListOut = {
+  items: ProductPublicOut[]
   total: number
   page: number
   page_size: number
@@ -29,10 +52,19 @@ export const ProductSchema = z.object({
     .string()
     .min(2, { message: '商品名称至少2个字符' })
     .max(128, { message: '商品名称不能超过128个字符' }),
-  sku: z.string().max(64).optional().nullable(),
+  sku: z.string().max(64, { message: 'SKU长度不能超过64位' }).optional().nullable(),
   description: z.string().optional().nullable(),
-  price: z.number().min(0, { message: '价格不能小于0' }),
-  stock: z.number().int({ message: '库存必须是整数' }).min(0, { message: '库存不能小于0' }),
+  price: z
+    .number()
+    .or(z.nan())
+    .transform((val) => (Number.isNaN(val) ? -1 : val))
+    .refine((val) => val >= 0, { message: '请输入有效的价格' }),
+  stock: z
+    .number()
+    .or(z.nan())
+    .transform((val) => (Number.isNaN(val) ? -1 : val))
+    .refine((val) => Number.isInteger(val), { message: '库存必须是整数' })
+    .refine((val) => val >= 0, { message: '请输入有效的库存数量' }),
   category_ids: z.array(z.string()).optional(),
   image_url: z.string().optional().nullable(),
 })
@@ -46,9 +78,10 @@ export type ProductStatusIn = {
 }
 
 /** 商品筛选参数 */
-export type ProductQueryParams = {
+export type ProductListIn = {
   page?: number
   page_size?: number
   keyword?: string
   status?: 'on' | 'off'
+  sort_by?: 'newest' | 'price_asc' | 'price_desc'
 }

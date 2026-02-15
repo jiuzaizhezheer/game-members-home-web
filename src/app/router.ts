@@ -8,18 +8,47 @@ import {
   ProductList,
   ProductDetail,
   MerchantSettings,
+  MerchantOrderList,
+  MerchantAccount,
 } from '@/pages/merchant'
 import { AdminLayout, AdminDashboard } from '@/pages/admin'
-
+import {
+  MemberLayout,
+  HomePage,
+  ProductDetailPage,
+  CartPage,
+  CheckoutPage,
+  OrderListPage,
+  OrderDetailPage,
+  ProfilePage,
+  AddressListPage,
+} from '@/pages/member'
 import WelcomePage from '@/pages/index'
 
 export const router = createBrowserRouter([
-  // Index Route
+  // ... (Index Route remains)
   {
     path: '/',
     children: [
       { index: true, element: createElement(Navigate, { to: 'index', replace: true }) },
       { path: 'index', element: createElement(WelcomePage) },
+    ],
+  },
+
+  // Member Routes
+  {
+    path: '/member',
+    element: createElement(MemberLayout),
+    children: [
+      { index: true, element: createElement(Navigate, { to: 'home', replace: true }) },
+      { path: 'home', element: createElement(HomePage) },
+      { path: 'product/:id', element: createElement(ProductDetailPage) },
+      { path: 'cart', element: createElement(CartPage) },
+      { path: 'checkout', element: createElement(CheckoutPage) },
+      { path: 'orders', element: createElement(OrderListPage) },
+      { path: 'order/:id', element: createElement(OrderDetailPage) },
+      { path: 'profile', element: createElement(ProfilePage) },
+      { path: 'profile/addresses', element: createElement(AddressListPage) },
     ],
   },
 
@@ -44,6 +73,8 @@ export const router = createBrowserRouter([
       { path: 'product/list', element: createElement(ProductList) },
       { path: 'product/create', element: createElement(ProductDetail) },
       { path: 'product/edit/:id', element: createElement(ProductDetail) },
+      { path: 'order/list', element: createElement(MerchantOrderList) },
+      { path: 'account', element: createElement(MerchantAccount) },
       { path: 'settings', element: createElement(MerchantSettings) },
     ],
   },

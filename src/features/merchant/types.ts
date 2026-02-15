@@ -7,6 +7,7 @@ export type MerchantOut = {
   shop_name: string
   contact_phone: string | null
   shop_desc: string | null
+  logo_url: string | null
   created_at: string
 }
 
@@ -16,8 +17,14 @@ export const MerchantUpdateSchema = z.object({
     .string()
     .min(2, { message: '店铺名称至少2个字符' })
     .max(128, { message: '店铺名称不能超过128个字符' }),
-  contact_phone: z.string().length(11, { message: '联系电话必须是11位' }).optional().nullable(),
+  contact_phone: z
+    .string()
+    .length(11, { message: '联系电话必须是11位' })
+    .or(z.literal(''))
+    .optional()
+    .nullable(),
   shop_desc: z.string().optional().nullable(),
+  logo_url: z.string().optional().nullable(),
 })
 
 /** 更新商家店铺信息请求 (从 Schema 自动推导) */

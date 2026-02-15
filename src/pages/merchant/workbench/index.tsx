@@ -13,7 +13,8 @@ import {
 import { toast } from 'sonner'
 
 import { productService } from '@/features/product/service'
-import type { Product } from '@/features/product/types'
+import type { ProductOut } from '@/features/product/types'
+import { getFileUrl } from '@/shared/utils/file'
 
 export default function MerchantWorkbench() {
   const navigate = useNavigate()
@@ -22,14 +23,14 @@ export default function MerchantWorkbench() {
     totalViews: 0,
     totalSales: 0,
   })
-  const [recentProducts, setRecentProducts] = useState<Product[]>([])
+  const [recentProducts, setRecentProducts] = useState<ProductOut[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         // 获取商品列表（第一页，主要为了获取总数和最新的几个）
-        const res = await productService.getList({ page: 1, page_size: 5 })
+        const res = await productService.getMerchantList({ page: 1, page_size: 5 })
 
         // 简单的统计聚合（实际应该由专门的统计 API 提供）
         const totalViews = res.items.reduce((acc, curr) => acc + curr.views_count, 0) // 这里其实不准确，因为只算了第一页，暂且用来演示
@@ -150,7 +151,7 @@ export default function MerchantWorkbench() {
                     <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-100 border border-zinc-200">
                       {product.image_url ? (
                         <img
-                          src={product.image_url}
+                          src={getFileUrl(product.image_url)}
                           alt={product.name}
                           className="h-full w-full object-cover"
                         />
