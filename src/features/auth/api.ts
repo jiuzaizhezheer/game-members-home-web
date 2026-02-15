@@ -33,4 +33,14 @@ export const authApi = {
       auth: false,
     })
   },
+
+  /**
+   * 用户登出
+   */
+  async logout(): Promise<void> {
+    await requestJson<void>('/auths/logout', {
+      method: 'POST',
+      auth: false,
+    })
+  },
 }

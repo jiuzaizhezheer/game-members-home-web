@@ -1,13 +1,14 @@
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Mail, Lock, ChevronDown, ChevronUp, Check, Eye, EyeOff } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { type AuthLoginIn } from '@/features/auth/types'
+import { type AuthLoginIn, type Role } from '@/features/auth/types'
 import { authService } from '@/features/auth/service'
 import { ROLE_ICONS, ROLE_OPTIONS } from '@/features/auth/constants'
 import { useClickOutside } from '@/hooks/useClickOutside'
+import { useAuth } from '@/contexts/AuthContext'
 
 /**
  * 首页组件 - 用户登录注册入口
@@ -15,6 +16,13 @@ import { useClickOutside } from '@/hooks/useClickOutside'
 export default function HomePage() {
   /** 导航 */
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { refreshFromStorage } = useAuth()
+
+  // 从 URL 获取 role 参数
+  const urlRole = searchParams.get('role') as Role | null
+  const defaultRole: Role =
+    urlRole && ['member', 'merchant', 'admin'].includes(urlRole) ? urlRole : 'member'
 
   // ==================== 引用 (Refs) ====================
   /** 下拉框容器引用，用于处理点击外部关闭 */
@@ -25,24 +33,23 @@ export default function HomePage() {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<AuthLoginIn>({
     defaultValues: {
       email: '',
       password: '',
-      role: 'member',
+      role: defaultRole,
     },
   })
-
-  // 监听角色变化
-  const role = watch('role')
 
   // ==================== UI 状态 ====================
   /** 下拉框是否处于开启状态 */
   const [isSelectOpen, setIsSelectOpen] = useState(false)
   /** 密码是否可见 */
   const [showPassword, setShowPassword] = useState(false)
+
+  // 角色状态 (手动管理以避免 watch 导致的 React Compiler 警告)
+  const [role, setRole] = useState<Role>(defaultRole)
 
   // 自定义角色图标组件
   const RoleIcon = ROLE_ICONS[role]
@@ -56,6 +63,7 @@ export default function HomePage() {
   async function handleLogin(data: AuthLoginIn) {
     try {
       await authService.login(data)
+      await refreshFromStorage()
       toast.success('登录成功')
       // 根据用户角色跳转到不同的路由 (如 /member, /merchant, /admin)
       navigate(`/${data.role}`)
@@ -83,7 +91,7 @@ export default function HomePage() {
             <p className="mt-1 text-sm text-zinc-500">选择您的角色以继续访问系统</p>
           </div>
 
-          <form onSubmit={handleSubmit(handleLogin)} className="space-y-6" autoComplete="off">
+          <form onSubmit={handleSubmit(handleLogin)} className="space-y-6" autoComplete="on">
             {/* 角色选择 - 自定义下拉框 */}
             <div className="space-y-2">
               <div className="text-sm font-medium text-zinc-700">当前身份</div>
@@ -120,6 +128,7 @@ export default function HomePage() {
                             type="button"
                             onClick={() => {
                               setValue('role', option.value)
+                              setRole(option.value)
                               setIsSelectOpen(false)
                             }}
                             className={`group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
@@ -173,8 +182,8 @@ export default function HomePage() {
                 </div>
                 <input
                   {...register('email')}
-                  type="text"
-                  autoComplete="off"
+                  type="email"
+                  autoComplete="username email"
                   placeholder="请输入您的邮箱"
                   className={`h-12 w-full rounded-xl bg-zinc-50 pl-12 pr-4 text-base text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:ring-2 focus:ring-indigo-500/20 ring-1 ${errors.email ? 'ring-rose-200 focus:ring-rose-500/20' : 'ring-black/5'}`}
                 />
@@ -195,11 +204,8 @@ export default function HomePage() {
                 </div>
                 <input
                   {...register('password')}
-                  type="text"
-                  autoComplete="off"
-                  style={
-                    { WebkitTextSecurity: showPassword ? 'none' : 'disc' } as React.CSSProperties
-                  }
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   placeholder="请输入您的密码"
                   className={`h-12 w-full rounded-xl bg-zinc-50 pl-12 pr-12 text-base text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:ring-2 focus:ring-indigo-500/20 ring-1 ${errors.password ? 'ring-rose-200 focus:ring-rose-500/20' : 'ring-black/5'}`}
                 />
@@ -225,7 +231,7 @@ export default function HomePage() {
 
               <button
                 type="button"
-                onClick={() => navigate('/auth/register')}
+                onClick={() => navigate(`/auth/register?role=${role}`)}
                 className="h-12 w-full rounded-full border border-transparent bg-zinc-100 text-base font-semibold text-zinc-600 transition-all hover:bg-zinc-200 hover:text-zinc-900"
               >
                 暂无账号 去注册

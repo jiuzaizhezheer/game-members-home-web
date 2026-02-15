@@ -1,5 +1,5 @@
 /** 分类信息 */
-export type Category = {
+export type CategoryOut = {
   id: string
   name: string
   slug: string

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Mail,
   Lock,
@@ -27,6 +27,12 @@ import { AuthRegisterSchema, type AuthRegisterIn, type Role } from '@/features/a
 export default function RegisterPage() {
   /** 导航 */
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // 从 URL 获取 role 参数
+  const urlRole = searchParams.get('role') as Role | null
+  const defaultRole: Role =
+    urlRole && ['member', 'merchant', 'admin'].includes(urlRole) ? urlRole : 'member'
 
   // ==================== 引用 (Refs) ====================
   /** 下拉框容器引用 */
@@ -37,7 +43,6 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<AuthRegisterIn>({
     resolver: zodResolver(AuthRegisterSchema),
@@ -45,13 +50,14 @@ export default function RegisterPage() {
       username: '',
       email: '',
       password: '',
-      role: 'member',
+      role: defaultRole,
       captcha_id: '',
       captcha_code: '',
     },
   })
 
-  const role = watch('role')
+  // 角色状态 (手动管理以避免 watch 导致的 React Compiler 警告)
+  const [role, setRole] = useState<Role>(defaultRole)
 
   // ==================== UI 状态 ====================
   /** 验证码图片 (Base64) */
@@ -94,7 +100,7 @@ export default function RegisterPage() {
     try {
       await authService.register(data)
       toast.success('注册成功，请登录')
-      navigate('/auth/login')
+      navigate(`/auth/login?role=${data.role}`)
     } catch (err) {
       console.error('Register failed:', err)
       // 注册失败通常需要刷新验证码
@@ -156,6 +162,7 @@ export default function RegisterPage() {
                             type="button"
                             onClick={() => {
                               setValue('role', option.value as Role)
+                              setRole(option.value as Role)
                               setIsSelectOpen(false)
                             }}
                             className={`group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
@@ -333,7 +340,7 @@ export default function RegisterPage() {
               <span className="text-zinc-500">已有账号？</span>{' '}
               <button
                 type="button"
-                onClick={() => navigate('/auth/login')}
+                onClick={() => navigate(`/auth/login?role=${role}`)}
                 className="font-semibold text-indigo-600 hover:underline"
               >
                 返回登录

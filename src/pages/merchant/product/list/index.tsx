@@ -1,19 +1,32 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Edit, Eye, EyeOff, PackageSearch, Loader2, Filter } from 'lucide-react'
+import {
+  Plus,
+  Search,
+  Edit,
+  Eye,
+  EyeOff,
+  PackageSearch,
+  Loader2,
+  Filter,
+  Trash2,
+} from 'lucide-react'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { toast } from 'sonner'
 import { productService } from '@/features/product/service'
-import type { Product, ProductQueryParams } from '@/features/product/types'
+import type { ProductOut, ProductListIn } from '@/features/product/types'
 import { useDebounce } from '@/hooks/useDebounce'
+import { getFileUrl } from '@/shared/utils/file'
 
 export default function ProductList() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<ProductOut[]>([])
   const [total, setTotal] = useState(0)
+  const confirm = useConfirm()
 
   // 查询状态
-  const [queryParams, setQueryParams] = useState<ProductQueryParams>({
+  const [queryParams, setQueryParams] = useState<ProductListIn>({
     page: 1,
     page_size: 10,
     keyword: '',
@@ -24,28 +37,29 @@ export default function ProductList() {
   const debouncedKeyword = useDebounce(queryParams.keyword, 1000)
 
   // 监听参数变化重新加载
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const res = await productService.getList({
-          ...queryParams,
-          keyword: debouncedKeyword, // 使用防抖后的关键字
-        })
-        setProducts(res.items)
-        setTotal(res.total)
-      } catch (err) {
-        console.error(err)
-        toast.error('获取商品列表失败')
-      } finally {
-        setLoading(false)
-      }
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true)
+      const res = await productService.getMerchantList({
+        ...queryParams,
+        keyword: debouncedKeyword, // 使用防抖后的关键字
+      })
+      setProducts(res.items)
+      setTotal(res.total)
+    } catch (err) {
+      console.error(err)
+      toast.error('获取商品列表失败')
+    } finally {
+      setLoading(false)
     }
+  }, [debouncedKeyword, queryParams])
+
+  useEffect(() => {
     fetchData()
-  }, [queryParams, debouncedKeyword])
+  }, [fetchData])
 
   // 处理上下架
-  const handleStatusChange = async (product: Product) => {
+  const handleStatusChange = async (product: ProductOut) => {
     const newStatus = product.status === 'on' ? 'off' : 'on'
     try {
       await productService.updateStatus(product.id, { status: newStatus })
@@ -56,6 +70,30 @@ export default function ProductList() {
       )
     } catch {
       toast.error('操作失败')
+    }
+  }
+
+  // 删除商品
+  const handleDelete = async (product: ProductOut) => {
+    if (
+      await confirm({
+        title: '删除商品',
+        description: `确定要删除商品 "${product.name}" 吗？此操作不可恢复。`,
+        confirmText: '删除',
+        cancelText: '取消',
+        variant: 'danger',
+      })
+    ) {
+      try {
+        await productService.delete(product.id)
+        toast.success('删除成功')
+        // 乐观更新
+        setProducts((prev) => prev.filter((p) => p.id !== product.id))
+        setTotal((prev) => prev - 1)
+      } catch (err) {
+        console.error(err)
+        toast.error('删除失败')
+      }
     }
   }
 
@@ -99,7 +137,7 @@ export default function ProductList() {
               onChange={(e) =>
                 setQueryParams({
                   ...queryParams,
-                  status: (e.target.value as Product['status']) || undefined,
+                  status: (e.target.value as ProductOut['status']) || undefined,
                   page: 1,
                 })
               }
@@ -155,9 +193,9 @@ export default function ProductList() {
                         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-zinc-100 bg-zinc-50">
                           {product.image_url ? (
                             <img
-                              src={product.image_url}
+                              src={getFileUrl(product.image_url)}
                               alt={product.name}
-                              className="h-full w-full object-cover"
+                              className="h-full w-full object-cover object-center"
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-zinc-300">
@@ -204,20 +242,27 @@ export default function ProductList() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handleStatusChange(product)}
-                          className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-indigo-600"
+                          className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-indigo-600"
                           title={product.status === 'on' ? '下架商品' : '上架商品'}
                         >
-                          {product.status === 'on' ? <EyeOff size={20} /> : <Eye size={20} />}
+                          {product.status === 'on' ? <Eye size={18} /> : <EyeOff size={18} />}
                         </button>
                         <button
                           onClick={() => navigate(`/merchant/product/edit/${product.id}`)}
-                          className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-indigo-600"
+                          className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-indigo-600"
                           title="编辑商品"
                         >
-                          <Edit size={20} />
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product)}
+                          className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-400 hover:bg-rose-50 hover:text-rose-600"
+                          title="删除商品"
+                        >
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </td>
