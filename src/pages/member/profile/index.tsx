@@ -14,6 +14,7 @@ import {
   Loader2,
   MapPin,
   KeyRound,
+  MessageSquare,
 } from 'lucide-react'
 import { userService } from '@/features/user/service'
 import {
@@ -290,6 +291,25 @@ export default function ProfilePage() {
               className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
             >
               去管理
+            </button>
+          </section>
+
+          {/* My Posts Management */}
+          <section className="group flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
+            <div className="flex items-center gap-4">
+              <div className="rounded-xl bg-purple-50 p-3 text-purple-600 transition-colors group-hover:bg-purple-100">
+                <MessageSquare className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-zinc-900">我的发布</h3>
+                <p className="text-sm text-zinc-500">管理您在各话题圈发布的帖子和讨论</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/member/profile/posts')}
+              className="text-sm font-semibold text-purple-600 hover:text-purple-700"
+            >
+              查看我的帖子
             </button>
           </section>
 

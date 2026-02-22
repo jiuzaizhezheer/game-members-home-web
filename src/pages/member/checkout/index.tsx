@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   MapPin,
   Plus,
@@ -20,8 +20,33 @@ import { getFileUrl } from '@/shared/utils/file'
 
 import { PaymentModal } from '@/features/order/components/PaymentModal'
 
+/** 立即购买传入的商品信息 */
+interface BuyNowItem {
+  product_id: string
+  product_name: string
+  product_image: string | null
+  unit_price: number | string
+  quantity: number
+}
+
+/** 统一的结算商品展示项 */
+interface CheckoutDisplayItem {
+  id: string
+  product_name: string
+  product_image: string | null
+  unit_price: number
+  quantity: number
+  subtotal: number
+}
+
 export default function CheckoutPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // 判断是否为「立即购买」模式
+  const buyNowItem = (location.state as { buyNowItem?: BuyNowItem } | null)?.buyNowItem
+  const isBuyNowMode = !!buyNowItem
+
   const [addresses, setAddresses] = useState<AddressOut[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
   const [cart, setCart] = useState<CartOut | null>(null)
@@ -34,25 +59,31 @@ export default function CheckoutPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [addrList, cartData] = await Promise.all([
-        addressService.getMyAddresses(),
-        cartService.getMyCart(),
-      ])
+      let addrList: AddressOut[] = []
+      if (isBuyNowMode) {
+        addrList = await addressService.getMyAddresses()
+        setAddresses(addrList)
+      } else {
+        const [addrListResult, cartData] = await Promise.all([
+          addressService.getMyAddresses(),
+          cartService.getMyCart(),
+        ])
+        addrList = addrListResult
+        setAddresses(addrListResult)
+        setCart(cartData)
 
-      setAddresses(addrList)
-      setCart(cartData)
+        if (!cartData || cartData.items.length === 0) {
+          toast.error('购物车是空的')
+          navigate('/member/cart')
+          return
+        }
+      }
 
-      // Auto-select default address
       const defaultAddr = addrList.find((a: AddressOut) => a.is_default)
       if (defaultAddr) {
         setSelectedAddressId(defaultAddr.id)
       } else if (addrList.length > 0) {
         setSelectedAddressId(addrList[0].id)
-      }
-
-      if (!cartData || cartData.items.length === 0) {
-        toast.error('购物车是空的')
-        navigate('/member/cart')
       }
     } catch (error) {
       console.error('Failed to fetch checkout data', error)
@@ -60,11 +91,36 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false)
     }
-  }, [navigate])
+  }, [navigate, isBuyNowMode])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // 组装展示用的商品列表
+  const displayItems: CheckoutDisplayItem[] = isBuyNowMode
+    ? [
+        {
+          id: buyNowItem!.product_id,
+          product_name: buyNowItem!.product_name,
+          product_image: buyNowItem!.product_image,
+          unit_price: Number(buyNowItem!.unit_price),
+          quantity: buyNowItem!.quantity,
+          subtotal: Number(buyNowItem!.unit_price) * buyNowItem!.quantity,
+        },
+      ]
+    : (cart?.items ?? []).map((item) => ({
+        id: item.id,
+        product_name: item.product_name,
+        product_image: item.product_image,
+        unit_price: Number(item.unit_price),
+        quantity: item.quantity,
+        subtotal: Number(item.subtotal),
+      }))
+
+  const totalAmount = isBuyNowMode
+    ? Number(buyNowItem!.unit_price) * buyNowItem!.quantity
+    : Number(cart?.total_amount || 0)
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
@@ -74,14 +130,22 @@ export default function CheckoutPage() {
 
     setSubmitting(true)
     try {
-      const order = await orderService.createOrder({
-        address_id: selectedAddressId,
-      })
-      // toast.success('订单已提交', {
-      //     description: `订单号: ${order.order_no}`
-      // })
+      let order
 
-      // Record order info and show payment modal
+      if (isBuyNowMode) {
+        // 立即购买模式：调用 buy-now 接口
+        order = await orderService.buyNow({
+          product_id: buyNowItem!.product_id,
+          quantity: buyNowItem!.quantity,
+          address_id: selectedAddressId,
+        })
+      } else {
+        // 购物车结算模式
+        order = await orderService.createOrder({
+          address_id: selectedAddressId,
+        })
+      }
+
       setNewlyCreatedOrder({
         id: order.id,
         amount: Number(order.total_amount),
@@ -107,7 +171,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold text-zinc-900 sm:text-3xl">确认订单</h1>
+      <h1 className="text-2xl font-bold text-zinc-900 sm:text-3xl">
+        {isBuyNowMode ? '立即购买' : '确认订单'}
+      </h1>
 
       <div className="mt-8 lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-12">
         <div className="lg:col-span-8 space-y-8">
@@ -177,13 +243,14 @@ export default function CheckoutPage() {
               商品清单
             </h2>
             <ul className="divide-y divide-zinc-100">
-              {cart?.items.map((item) => (
+              {displayItems.map((item) => (
                 <li key={item.id} className="flex py-4">
                   <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-zinc-100 bg-zinc-50">
                     {item.product_image ? (
                       <img
                         src={getFileUrl(item.product_image)}
                         alt={item.product_name}
+                        loading="lazy"
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -195,12 +262,12 @@ export default function CheckoutPage() {
                   <div className="ml-4 flex flex-1 flex-col justify-center">
                     <div className="flex justify-between text-sm font-medium">
                       <h3 className="text-zinc-900">{item.product_name}</h3>
-                      <p className="text-zinc-900">¥{Number(item.unit_price).toFixed(2)}</p>
+                      <p className="text-zinc-900">¥{item.unit_price.toFixed(2)}</p>
                     </div>
                     <div className="mt-2 flex justify-between text-xs text-zinc-500">
                       <p>数量: {item.quantity}</p>
                       <p className="font-semibold text-zinc-700">
-                        小计: ¥{Number(item.subtotal).toFixed(2)}
+                        小计: ¥{item.subtotal.toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -218,9 +285,7 @@ export default function CheckoutPage() {
             <dl className="mt-6 space-y-4">
               <div className="flex items-center justify-between text-zinc-400">
                 <dt className="text-sm">商品小计</dt>
-                <dd className="text-sm font-medium">
-                  ¥{Number(cart?.total_amount || 0).toFixed(2)}
-                </dd>
+                <dd className="text-sm font-medium">¥{totalAmount.toFixed(2)}</dd>
               </div>
               <div className="flex items-center justify-between text-zinc-400">
                 <dt className="text-sm">运费</dt>
@@ -228,9 +293,7 @@ export default function CheckoutPage() {
               </div>
               <div className="border-t border-white/10 pt-4 flex items-center justify-between">
                 <dt className="text-base font-bold">应付总额</dt>
-                <dd className="text-2xl font-black">
-                  ¥{Number(cart?.total_amount || 0).toFixed(2)}
-                </dd>
+                <dd className="text-2xl font-black">¥{totalAmount.toFixed(2)}</dd>
               </div>
             </dl>
 
@@ -289,7 +352,6 @@ export default function CheckoutPage() {
             navigate('/member/orders')
           }}
           onSuccess={() => {
-            // Success toast is already in Modal
             navigate('/member/orders')
           }}
           orderId={newlyCreatedOrder.id}

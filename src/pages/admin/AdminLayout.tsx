@@ -12,9 +12,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
+  MessageCircle,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { clearAccessToken } from '@/shared/auth/token'
+import { useAuth } from '@/contexts/AuthContext'
 
 /**
  * 管理后台侧边栏菜单项
@@ -31,6 +32,7 @@ const SIDEBAR_ITEMS = [
   { icon: Store, label: '商家管理', path: '/admin/merchants', disabled: true },
   { icon: Package, label: '商品管理', path: '/admin/products', disabled: true },
   { icon: ShoppingCart, label: '订单管理', path: '/admin/orders', disabled: true },
+  { icon: MessageCircle, label: '社群管理', path: '/admin/community' },
   { icon: FileSearch, label: '内容审核', path: '/admin/audit', disabled: true },
 ]
 
@@ -39,9 +41,11 @@ export default function AdminLayout() {
   const location = useLocation()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const { logout } = useAuth()
 
-  const handleLogout = () => {
-    clearAccessToken()
+  const handleLogout = async () => {
+    await logout()
     navigate('/auth/login')
   }
 
@@ -136,10 +140,9 @@ export default function AdminLayout() {
           })}
         </nav>
 
-        {/* User Profile & Logout */}
         <div className="border-t border-zinc-100 p-3">
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-zinc-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 ${
               isCollapsed ? 'justify-center' : ''
             }`}
@@ -152,6 +155,49 @@ export default function AdminLayout() {
           </button>
         </div>
       </motion.aside>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLogoutConfirm(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+            >
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                <LogOut size={24} />
+              </div>
+              <h3 className="mb-2 text-lg font-bold text-zinc-900">确认退出管理员后台？</h3>
+              <p className="mb-6 text-sm text-zinc-500">
+                退出后您将需要重新验证身份后才能继续管理操作。
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 rounded-full border border-zinc-200 py-2.5 text-sm font-bold text-zinc-500 hover:bg-zinc-50 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 rounded-full bg-rose-600 py-2.5 text-sm font-bold text-white shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all active:scale-95"
+                >
+                  确认退出
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <main className="flex-1 overflow-x-hidden">

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Mail, Lock, ChevronDown, ChevronUp, Check, Eye, EyeOff } from 'lucide-react'
 import { useForm } from 'react-hook-form'
@@ -17,7 +17,14 @@ export default function HomePage() {
   /** 导航 */
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { refreshFromStorage } = useAuth()
+  const { refreshFromStorage, state } = useAuth()
+
+  // 如果已登录，自动跳转到对应角色主页
+  useEffect(() => {
+    if (state.isAuthenticated && state.user) {
+      navigate(`/${state.user.role}`, { replace: true })
+    }
+  }, [state.isAuthenticated, state.user, navigate])
 
   // 从 URL 获取 role 参数
   const urlRole = searchParams.get('role') as Role | null

@@ -1,6 +1,6 @@
 import { merchantApi } from './api'
 import type { MerchantOut, MerchantUpdateIn } from './types'
-import type { OrderListOut } from '../order/types'
+import type { OrderListOut, OrderShipIn } from '../order/types'
 
 /** 商家服務 */
 export const merchantService = {
@@ -18,7 +18,7 @@ export const merchantService = {
     return await merchantApi.getOrders(page, pageSize, status)
   },
 
-  async shipOrder(id: string): Promise<void> {
-    return await merchantApi.shipOrder(id)
+  async shipOrder(id: string, payload: OrderShipIn): Promise<void> {
+    return await merchantApi.shipOrder(id, payload)
   },
 }

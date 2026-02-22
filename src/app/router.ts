@@ -1,32 +1,62 @@
-import { createElement } from 'react'
+import { createElement, lazy, Suspense } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 
-import { AuthLayout, LoginPage, RegisterPage } from '@/pages/auth'
-import {
-  MerchantLayout,
-  MerchantWorkbench,
-  ProductList,
-  ProductDetail,
-  MerchantSettings,
-  MerchantOrderList,
-  MerchantAccount,
-} from '@/pages/merchant'
-import { AdminLayout, AdminDashboard } from '@/pages/admin'
-import {
-  MemberLayout,
-  HomePage,
-  ProductDetailPage,
-  CartPage,
-  CheckoutPage,
-  OrderListPage,
-  OrderDetailPage,
-  ProfilePage,
-  AddressListPage,
-} from '@/pages/member'
+// Layouts: eager imports (tiny shells needed immediately, not worth splitting)
+import { AuthLayout } from '@/pages/auth'
+import { MemberLayout } from '@/pages/member'
+import { MerchantLayout } from '@/pages/merchant'
+import { AdminLayout } from '@/pages/admin'
+import CommunityLayout from '@/pages/community/layout'
 import WelcomePage from '@/pages/index'
 
+// ─── Lazy-loaded page chunks ──────────────────────────────────────────────────
+// Auth
+const LoginPage = lazy(() => import('@/pages/auth/login'))
+const RegisterPage = lazy(() => import('@/pages/auth/register'))
+
+// Member
+const HomePage = lazy(() => import('@/pages/member/home'))
+const ProductDetailPage = lazy(() => import('@/pages/member/product/detail'))
+const CartPage = lazy(() => import('@/pages/member/cart'))
+const CheckoutPage = lazy(() => import('@/pages/member/checkout'))
+const OrderListPage = lazy(() => import('@/pages/member/order/list'))
+const OrderDetailPage = lazy(() => import('@/pages/member/order/detail'))
+const ProfilePage = lazy(() => import('@/pages/member/profile'))
+const AddressListPage = lazy(() => import('@/pages/member/profile/addresses'))
+const FavoritesPage = lazy(() => import('@/pages/member/favorites'))
+const MessageListPage = lazy(() => import('@/pages/member/message/list'))
+const ChatPage = lazy(() => import('@/pages/member/message/chat'))
+const MyPostsPage = lazy(() => import('@/pages/member/profile/MyPosts'))
+
+// Community
+const GroupListPage = lazy(() => import('@/pages/community/groups/index'))
+const GroupDetailPage = lazy(() => import('@/pages/community/groups/detail'))
+const PostDetailPage = lazy(() => import('@/pages/community/posts/detail'))
+const CreatePostPage = lazy(() => import('@/pages/community/posts/create'))
+const SearchResultsPage = lazy(() => import('@/pages/community/SearchResults'))
+
+// Merchant
+const MerchantWorkbench = lazy(() => import('@/pages/merchant/workbench'))
+const MerchantProductList = lazy(() => import('@/pages/merchant/product/list'))
+const MerchantProductDetail = lazy(() => import('@/pages/merchant/product/detail'))
+const MerchantOrderList = lazy(() => import('@/pages/merchant/order/list'))
+const MerchantAccount = lazy(() => import('@/pages/merchant/account'))
+const MerchantSettings = lazy(() => import('@/pages/merchant/profile'))
+const MerchantMessageList = lazy(() => import('@/pages/merchant/message/list'))
+const MerchantChatPage = lazy(() => import('@/pages/merchant/message/chat'))
+const MerchantCommunityPage = lazy(() => import('@/pages/merchant/community'))
+const PromotionListPage = lazy(() => import('@/pages/merchant/marketing/promotions/index'))
+const PromotionCreatePage = lazy(() => import('@/pages/merchant/marketing/promotions/create'))
+
+// Admin
+const AdminDashboard = lazy(() => import('@/pages/admin/dashboard'))
+const AdminCommunityPage = lazy(() => import('@/pages/admin/community'))
+
+// ─── Helper: wrap a lazy element in Suspense (null fallback - layout handles UI) ─
+const s = (element: React.ReactNode) => createElement(Suspense, { fallback: null }, element)
+
+// ─── Router ───────────────────────────────────────────────────────────────────
 export const router = createBrowserRouter([
-  // ... (Index Route remains)
   {
     path: '/',
     children: [
@@ -41,14 +71,32 @@ export const router = createBrowserRouter([
     element: createElement(MemberLayout),
     children: [
       { index: true, element: createElement(Navigate, { to: 'home', replace: true }) },
-      { path: 'home', element: createElement(HomePage) },
-      { path: 'product/:id', element: createElement(ProductDetailPage) },
-      { path: 'cart', element: createElement(CartPage) },
-      { path: 'checkout', element: createElement(CheckoutPage) },
-      { path: 'orders', element: createElement(OrderListPage) },
-      { path: 'order/:id', element: createElement(OrderDetailPage) },
-      { path: 'profile', element: createElement(ProfilePage) },
-      { path: 'profile/addresses', element: createElement(AddressListPage) },
+      { path: 'home', element: s(createElement(HomePage)) },
+      { path: 'product/:id', element: s(createElement(ProductDetailPage)) },
+      { path: 'cart', element: s(createElement(CartPage)) },
+      { path: 'checkout', element: s(createElement(CheckoutPage)) },
+      { path: 'orders', element: s(createElement(OrderListPage)) },
+      { path: 'order/:id', element: s(createElement(OrderDetailPage)) },
+      { path: 'profile', element: s(createElement(ProfilePage)) },
+      { path: 'profile/addresses', element: s(createElement(AddressListPage)) },
+      { path: 'profile/posts', element: s(createElement(MyPostsPage)) },
+      { path: 'favorites', element: s(createElement(FavoritesPage)) },
+      { path: 'messages', element: s(createElement(MessageListPage)) },
+      { path: 'messages/:partnerUserId', element: s(createElement(ChatPage)) },
+    ],
+  },
+
+  // Community Routes
+  {
+    path: '/community',
+    element: createElement(CommunityLayout),
+    children: [
+      { index: true, element: s(createElement(GroupListPage)) },
+      { path: 'groups/:id', element: s(createElement(GroupDetailPage)) },
+      { path: 'posts/create', element: s(createElement(CreatePostPage)) },
+      { path: 'posts/:id', element: s(createElement(PostDetailPage)) },
+      { path: 'posts/:id/edit', element: s(createElement(CreatePostPage)) },
+      { path: 'search', element: s(createElement(SearchResultsPage)) },
     ],
   },
 
@@ -58,8 +106,8 @@ export const router = createBrowserRouter([
     element: createElement(AuthLayout),
     children: [
       { index: true, element: createElement(Navigate, { to: 'login', replace: true }) },
-      { path: 'login', element: createElement(LoginPage) },
-      { path: 'register', element: createElement(RegisterPage) },
+      { path: 'login', element: s(createElement(LoginPage)) },
+      { path: 'register', element: s(createElement(RegisterPage)) },
     ],
   },
 
@@ -69,13 +117,19 @@ export const router = createBrowserRouter([
     element: createElement(MerchantLayout),
     children: [
       { index: true, element: createElement(Navigate, { to: 'workbench', replace: true }) },
-      { path: 'workbench', element: createElement(MerchantWorkbench) },
-      { path: 'product/list', element: createElement(ProductList) },
-      { path: 'product/create', element: createElement(ProductDetail) },
-      { path: 'product/edit/:id', element: createElement(ProductDetail) },
-      { path: 'order/list', element: createElement(MerchantOrderList) },
-      { path: 'account', element: createElement(MerchantAccount) },
-      { path: 'settings', element: createElement(MerchantSettings) },
+      { path: 'workbench', element: s(createElement(MerchantWorkbench)) },
+      { path: 'product/list', element: s(createElement(MerchantProductList)) },
+      { path: 'product/create', element: s(createElement(MerchantProductDetail)) },
+      { path: 'product/edit/:id', element: s(createElement(MerchantProductDetail)) },
+      { path: 'order/list', element: s(createElement(MerchantOrderList)) },
+      { path: 'account', element: s(createElement(MerchantAccount)) },
+      { path: 'settings', element: s(createElement(MerchantSettings)) },
+      { path: 'messages', element: s(createElement(MerchantMessageList)) },
+      { path: 'messages/:partnerUserId', element: s(createElement(MerchantChatPage)) },
+      { path: 'community', element: s(createElement(MerchantCommunityPage)) },
+      { path: 'marketing/promotions', element: s(createElement(PromotionListPage)) },
+      { path: 'marketing/promotions/create', element: s(createElement(PromotionCreatePage)) },
+      { path: 'marketing/promotions/:id/edit', element: s(createElement(PromotionCreatePage)) },
     ],
   },
 
@@ -85,8 +139,8 @@ export const router = createBrowserRouter([
     element: createElement(AdminLayout),
     children: [
       { index: true, element: createElement(Navigate, { to: 'dashboard', replace: true }) },
-      { path: 'dashboard', element: createElement(AdminDashboard) },
-      // 后续扩展...
+      { path: 'dashboard', element: s(createElement(AdminDashboard)) },
+      { path: 'community', element: s(createElement(AdminCommunityPage)) },
     ],
   },
 ])

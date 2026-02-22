@@ -15,7 +15,7 @@ import { toast } from 'sonner'
 import { cartService } from '@/features/cart/service'
 import type { CartOut, CartItemOut } from '@/features/cart/types'
 import { getFileUrl } from '@/shared/utils/file'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm } from '@/components/ui/confirmContext'
 
 export default function CartPage() {
   const navigate = useNavigate()
@@ -150,6 +150,7 @@ export default function CartPage() {
                       <img
                         src={getFileUrl(item.product_image)}
                         alt={item.product_name}
+                        loading="lazy"
                         className="h-full w-full object-cover object-center"
                       />
                     ) : (
@@ -172,9 +173,29 @@ export default function CartPage() {
                             </Link>
                           </h3>
                         </div>
-                        <p className="mt-1 text-sm font-bold text-zinc-900">
-                          ¥{Number(item.unit_price).toFixed(2)}
-                        </p>
+
+                        <div className="mt-1 flex flex-col items-start gap-1">
+                          {item.active_promotion && (
+                            <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] leading-none font-bold text-white">
+                              {item.active_promotion.discount_type === 'percent'
+                                ? `${Number((100 - item.active_promotion.discount_value) / 10)
+                                    .toFixed(1)
+                                    .replace(/\.0$/, '')}折`
+                                : `直降 ¥${item.active_promotion.discount_value}`}
+                            </span>
+                          )}
+
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-sm font-bold text-emerald-600">
+                              ¥{Number(item.unit_price).toFixed(2)}
+                            </p>
+                            {item.original_price && (
+                              <p className="text-xs text-black line-through dark:text-zinc-500">
+                                ¥{Number(item.original_price).toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="mt-4 sm:mt-0 sm:pr-9">
@@ -243,7 +264,17 @@ export default function CartPage() {
                 <Ticket className="mr-2 h-4 w-4 text-zinc-400" />
                 <span>优惠扣减</span>
               </dt>
-              <dd className="text-sm font-medium text-teal-600">- ¥0.00</dd>
+              <dd className="text-sm font-medium text-teal-600">
+                - ¥
+                {cart.items
+                  .reduce((acc, item) => {
+                    if (item.original_price && item.active_promotion) {
+                      return acc + (item.original_price - item.unit_price) * item.quantity
+                    }
+                    return acc
+                  }, 0)
+                  .toFixed(2)}
+              </dd>
             </div>
 
             <div className="flex items-center justify-between border-t border-zinc-200 pt-4">

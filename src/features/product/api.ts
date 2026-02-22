@@ -38,7 +38,7 @@ export const productApi = {
     if (params.page_size) searchParams.append('page_size', params.page_size.toString())
     if (params.keyword) searchParams.append('keyword', params.keyword)
     if (params.sort_by) searchParams.append('sort_by', params.sort_by)
-    // Public list doesn't accept status param (always on)
+    if (params.category_id) searchParams.append('category_id', params.category_id)
 
     const queryString = searchParams.toString()
     return await requestJson<ProductPublicListOut>(`/products/?${queryString}`, {

@@ -1,20 +1,7 @@
-import { useState, createContext, useContext, useCallback, type ReactNode } from 'react'
+import { useState, useCallback, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, X } from 'lucide-react'
-
-type ConfirmOptions = {
-  title?: string
-  description: string
-  confirmText?: string
-  cancelText?: string
-  variant?: 'danger' | 'warning' | 'default'
-}
-
-type ConfirmContextValue = {
-  confirm: (options: ConfirmOptions) => Promise<boolean>
-}
-
-const ConfirmContext = createContext<ConfirmContextValue | null>(null)
+import { ConfirmContext, type ConfirmOptions } from './confirmContext'
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -62,7 +49,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       {children}
       <AnimatePresence>
         {isOpen && options && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -119,10 +106,4 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       </AnimatePresence>
     </ConfirmContext.Provider>
   )
-}
-
-export const useConfirm = () => {
-  const ctx = useContext(ConfirmContext)
-  if (!ctx) throw new Error('useConfirm must be used within ConfirmProvider')
-  return ctx.confirm
 }

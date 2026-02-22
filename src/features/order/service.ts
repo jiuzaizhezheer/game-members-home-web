@@ -1,9 +1,13 @@
 import { orderApi } from './api'
-import type { OrderCreateIn } from './types'
+import type { OrderCreateIn, BuyNowIn } from './types'
 
 export const orderService = {
   createOrder: async (data: OrderCreateIn) => {
     return await orderApi.createOrder(data)
+  },
+
+  buyNow: async (data: BuyNowIn) => {
+    return await orderApi.buyNow(data)
   },
 
   getMyOrders: async (page?: number, pageSize?: number) => {

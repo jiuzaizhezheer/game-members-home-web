@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 import { orderService } from '@/features/order/service'
 import type { OrderOut } from '@/features/order/types'
 import { getFileUrl } from '@/shared/utils/file'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm } from '@/components/ui/confirmContext'
 
 import { PaymentModal } from '@/features/order/components/PaymentModal'
 
@@ -178,6 +178,7 @@ export default function OrderListPage() {
                             <img
                               src={getFileUrl(item.product_image)}
                               alt={item.product_name}
+                              loading="lazy"
                               className="h-full w-full object-cover object-center"
                             />
                           ) : (
@@ -194,6 +195,16 @@ export default function OrderListPage() {
                         </div>
                       </div>
                     ))}
+
+                    {(order.status === 'shipped' || order.status === 'completed') &&
+                      order.courier_name && (
+                        <div className="mt-4 flex items-center gap-3 rounded-xl bg-indigo-50/50 px-4 py-2 text-xs text-indigo-700 ring-1 ring-inset ring-indigo-500/10">
+                          <Truck size={14} className="shrink-0" />
+                          <span className="font-semibold">{order.courier_name}</span>
+                          <span className="h-1 w-1 rounded-full bg-indigo-300" />
+                          <span className="font-mono">{order.tracking_no}</span>
+                        </div>
+                      )}
                   </div>
 
                   <div className="flex flex-col sm:items-end gap-2 pt-4 sm:pt-0 border-t sm:border-t-0 border-zinc-100">

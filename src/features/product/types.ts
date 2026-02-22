@@ -13,7 +13,17 @@ export type ProductOut = {
   image_url: string | null
   views_count: number
   sales_count: number
+  popularity_score: number
   category_ids: string[]
+}
+
+export type ProductPromotionOut = {
+  id: string
+  title: string
+  discount_type: 'percent' | 'fixed'
+  discount_value: number
+  start_at: string
+  end_at: string
 }
 
 /** 公开商品信息 (用户端) */
@@ -27,8 +37,12 @@ export type ProductPublicOut = Pick<
   | 'stock'
   | 'image_url'
   | 'sales_count'
+  | 'popularity_score'
   | 'category_ids'
->
+> & {
+  merchant_user_id?: string
+  active_promotion?: ProductPromotionOut | null
+}
 
 /** 商品列表响应 */
 export type ProductListOut = {
@@ -83,5 +97,6 @@ export type ProductListIn = {
   page_size?: number
   keyword?: string
   status?: 'on' | 'off'
-  sort_by?: 'newest' | 'price_asc' | 'price_desc'
+  sort_by?: 'newest' | 'price_asc' | 'price_desc' | 'popularity_desc'
+  category_id?: string
 }
