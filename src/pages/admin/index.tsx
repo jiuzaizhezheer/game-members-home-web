@@ -1,3 +1,8 @@
 export { default as AdminLayout } from './AdminLayout'
 export { default as AdminDashboard } from './dashboard'
 export { default as AdminCommunityPage } from './community'
+export { default as AdminUsersPage } from './users'
+export { default as AdminMerchantsPage } from './merchants'
+export { default as AdminProductsPage } from './products'
+export { default as AdminContentPage } from './content'
+export { default as AdminLogsPage } from './logs'
