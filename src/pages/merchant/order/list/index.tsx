@@ -7,7 +7,8 @@ import { merchantService } from '@/features/merchant/service'
 import type { OrderOut } from '@/features/order/types'
 import type { OrderListOut } from '@/features/order/types'
 import { getFileUrl } from '@/shared/utils/file'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { ShipmentModal } from './ShipmentModal'
+import type { OrderShipIn } from '@/features/order/types'
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {
@@ -48,12 +49,15 @@ const StatusBadge = ({ status }: { status: string }) => {
 }
 
 export default function MerchantOrderList() {
-  const confirm = useConfirm()
   const [orders, setOrders] = useState<OrderOut[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   type OrderStatusTab = 'all' | 'pending' | 'paid' | 'shipped' | 'completed'
   const [activeTab, setActiveTab] = useState<OrderStatusTab>('paid')
+
+  // Shipment Modal State
+  const [isShipModalOpen, setIsShipModalOpen] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState<OrderOut | null>(null)
 
   const tabs: { id: OrderStatusTab; label: string }[] = [
     { id: 'all', label: '全部' },
@@ -81,25 +85,24 @@ export default function MerchantOrderList() {
     fetchOrders()
   }, [fetchOrders])
 
-  const handleShip = async (e: React.MouseEvent, order: OrderOut) => {
+  const handleShipClick = (e: React.MouseEvent, order: OrderOut) => {
     e.preventDefault()
-    if (
-      await confirm({
-        title: '确认发货',
-        description: `确认要将订单 ${order.order_no} 标记为已发货吗？`,
-        confirmText: '确认发货',
-        cancelText: '取消',
-        variant: 'default',
-      })
-    ) {
-      try {
-        await merchantService.shipOrder(order.id)
-        toast.success('发货成功')
-        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: 'shipped' } : o)))
-      } catch (error) {
-        console.error('Ship order failed', error)
-        toast.error('发货失败')
-      }
+    setSelectedOrder(order)
+    setIsShipModalOpen(true)
+  }
+
+  const handleShipConfirm = async (data: OrderShipIn) => {
+    if (!selectedOrder) return
+    try {
+      await merchantService.shipOrder(selectedOrder.id, data)
+      toast.success('发货成功')
+      setOrders((prev) =>
+        prev.map((o) => (o.id === selectedOrder.id ? { ...o, status: 'shipped', ...data } : o)),
+      )
+    } catch (error) {
+      console.error('Ship order failed', error)
+      toast.error('发货失败')
+      throw error // Let the modal handles isSubmitting
     }
   }
 
@@ -173,6 +176,15 @@ export default function MerchantOrderList() {
                 </div>
               )}
 
+              {order.status !== 'pending' && order.status !== 'paid' && order.courier_name && (
+                <div className="border-b border-zinc-100 bg-indigo-50/30 px-6 py-2 text-xs flex items-center gap-4">
+                  <span className="text-indigo-600 font-medium">物流信息:</span>
+                  <span className="text-zinc-600">
+                    {order.courier_name} | {order.tracking_no}
+                  </span>
+                </div>
+              )}
+
               <div className="p-6">
                 <div className="space-y-4">
                   {order.items.map((item) => (
@@ -182,6 +194,7 @@ export default function MerchantOrderList() {
                           <img
                             src={getFileUrl(item.product_image)}
                             alt={item.product_name}
+                            loading="lazy"
                             className="h-full w-full object-cover"
                           />
                         )}
@@ -214,13 +227,12 @@ export default function MerchantOrderList() {
                   <div className="flex gap-3">
                     {order.status === 'paid' && (
                       <button
-                        onClick={(e) => handleShip(e, order)}
+                        onClick={(e) => handleShipClick(e, order)}
                         className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-[0.98]"
                       >
                         立即发货
                       </button>
                     )}
-                    {/* View Details Link if needed */}
                   </div>
                 </div>
               </div>
@@ -228,6 +240,13 @@ export default function MerchantOrderList() {
           ))}
         </div>
       )}
+
+      <ShipmentModal
+        isOpen={isShipModalOpen}
+        onClose={() => setIsShipModalOpen(false)}
+        onConfirm={handleShipConfirm}
+        order={selectedOrder}
+      />
     </div>
   )
 }

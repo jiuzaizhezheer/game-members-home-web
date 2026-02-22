@@ -1,12 +1,22 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
-import { Search, ShoppingCart, User, Gamepad2, Menu, X, MessageSquare, Package } from 'lucide-react'
+import {
+  Search,
+  ShoppingCart,
+  User,
+  Gamepad2,
+  Menu,
+  X,
+  MessageSquare,
+  Package,
+  Heart,
+} from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cartService } from '@/features/cart/service'
+import { messageService } from '@/features/message/service'
 import { getFileUrl } from '@/shared/utils/file'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
-import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirmContext'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -26,6 +36,7 @@ export default function Navbar() {
   }
 
   const [cartCount, setCartCount] = useState(0)
+  const [unreadCount, setUnreadCount] = useState(0)
   const confirm = useConfirm()
 
   useEffect(() => {
@@ -34,8 +45,24 @@ export default function Navbar() {
         .getMyCart()
         .then((cart) => setCartCount(cart.total_quantity))
         .catch(() => setCartCount(0))
+      messageService
+        .getUnreadCount()
+        .then(setUnreadCount)
+        .catch(() => setUnreadCount(0))
     }
   }, [isAuthenticated, location.pathname]) // Refresh on path change to keep it somewhat updated
+
+  // 轮询未读消息数（15 秒）
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const timer = setInterval(() => {
+      messageService
+        .getUnreadCount()
+        .then(setUnreadCount)
+        .catch(() => {})
+    }, 15_000)
+    return () => clearInterval(timer)
+  }, [isAuthenticated])
 
   // 未登录时购物车数量始终为 0
   const displayCartCount = isAuthenticated ? cartCount : 0
@@ -50,8 +77,7 @@ export default function Navbar() {
 
   const NAV_LINKS = [
     { label: '商城', path: '/member/home', icon: Gamepad2 },
-    // 预留社区跳转位置
-    { label: '社区', path: '/community', icon: MessageSquare, isCommunity: true },
+    { label: '社区', path: '/community', icon: MessageSquare },
   ]
 
   return (
@@ -93,18 +119,10 @@ export default function Navbar() {
                   key={link.path}
                   to={link.path}
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    location.pathname === link.path
+                    location.pathname.startsWith(link.path)
                       ? 'text-indigo-600'
                       : 'text-zinc-600 hover:text-zinc-900'
                   }`}
-                  onClick={(e) => {
-                    // 如果是社区链接，仅作为预留演示或跳转
-                    if (link.isCommunity) {
-                      e.preventDefault()
-                      // 允许后续在此处编写跳转逻辑
-                      toast.info('社区功能即将上线，敬请期待！')
-                    }
-                  }}
                 >
                   <link.icon size={18} />
                   {link.label}
@@ -139,6 +157,25 @@ export default function Navbar() {
                     className={`text-sm font-medium transition-colors ${location.pathname === '/member/orders' ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
                   >
                     我的订单
+                  </Link>
+                  <Link
+                    to="/member/favorites"
+                    className={`flex items-center gap-1 text-sm font-medium transition-colors ${location.pathname === '/member/favorites' ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
+                  >
+                    <Heart size={15} />
+                    收藏
+                  </Link>
+                  <Link
+                    to="/member/messages"
+                    className={`relative flex items-center gap-1 text-sm font-medium transition-colors ${location.pathname.startsWith('/member/messages') ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
+                  >
+                    <MessageSquare size={15} />
+                    消息
+                    {unreadCount > 0 && (
+                      <span className="absolute -right-3 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </Link>
                   <div className="h-4 w-px bg-zinc-200" />
                   <div className="flex items-center gap-3">
@@ -235,15 +272,9 @@ export default function Navbar() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    onClick={(e) => {
-                      if (link.isCommunity) {
-                        e.preventDefault()
-                        toast.info('社区功能即将上线，敬请期待！')
-                      }
-                      setIsMobileMenuOpen(false)
-                    }}
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
-                      location.pathname === link.path
+                      location.pathname.startsWith(link.path)
                         ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400'
                         : 'text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800'
                     }`}
@@ -278,6 +309,15 @@ export default function Navbar() {
                 >
                   <Package size={18} />
                   我的订单
+                </Link>
+
+                <Link
+                  to="/member/favorites"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${location.pathname === '/member/favorites' ? 'bg-indigo-50 text-indigo-600' : 'text-zinc-600 hover:bg-zinc-50'}`}
+                >
+                  <Heart size={18} />
+                  我的收藏
                 </Link>
 
                 <div className="my-2 h-px bg-zinc-100 dark:bg-zinc-800" />

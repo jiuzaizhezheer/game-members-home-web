@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Heart, Share2, Loader2, ArrowLeft, Archive, Package } from 'lucide-react'
+import {
+  ShoppingCart,
+  Heart,
+  Share2,
+  Loader2,
+  ArrowLeft,
+  Archive,
+  Package,
+  MessageSquare,
+} from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { productService } from '@/features/product/service'
 import { cartService } from '@/features/cart/service'
+import { favoriteService } from '@/features/favorite/service'
 import { useAuth } from '@/contexts/AuthContext'
 import type { ProductPublicOut } from '@/features/product/types'
 import { getFileUrl } from '@/shared/utils/file'
@@ -18,6 +28,8 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [quantity, setQuantity] = useState(1)
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [favLoading, setFavLoading] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -30,7 +42,6 @@ export default function ProductDetailPage() {
       } catch (error) {
         console.error('Failed to fetch product detail', error)
         toast.error('获取商品详情失败')
-        // navigate('/member/home') // Optional: redirect on error
       } finally {
         setLoading(false)
       }
@@ -38,6 +49,42 @@ export default function ProductDetailPage() {
 
     fetchProduct()
   }, [id])
+
+  // 检查收藏状态
+  useEffect(() => {
+    if (!id || !authState.isAuthenticated) return
+    favoriteService
+      .check(id)
+      .then((res) => setIsFavorited(res.is_favorited))
+      .catch(() => {})
+  }, [id, authState.isAuthenticated])
+
+  const toggleFavorite = async () => {
+    if (!authState.isAuthenticated) {
+      toast.error('请先登录', {
+        action: { label: '立即登录', onClick: () => navigate('/auth/login') },
+      })
+      return
+    }
+    if (!id) return
+
+    setFavLoading(true)
+    try {
+      if (isFavorited) {
+        await favoriteService.remove(id)
+        setIsFavorited(false)
+        toast.success('已取消收藏')
+      } else {
+        await favoriteService.add(id)
+        setIsFavorited(true)
+        toast.success('已收藏')
+      }
+    } catch {
+      toast.error('操作失败')
+    } finally {
+      setFavLoading(false)
+    }
+  }
 
   const handleAddToCart = async () => {
     if (!authState.isAuthenticated) {
@@ -72,6 +119,72 @@ export default function ProductDetailPage() {
     } finally {
       setAdding(false)
     }
+  }
+
+  const [buyingNow, setBuyingNow] = useState(false)
+
+  // 计算最终价格
+  const calculatePrice = () => {
+    if (!product || !product.active_promotion) return product ? Number(product.price) : 0
+
+    const { discount_type, discount_value } = product.active_promotion
+    const originalPrice = Number(product.price)
+
+    if (discount_type === 'percent') {
+      const rate = (100 - Number(discount_value)) / 100
+      return Math.max(0, originalPrice * rate)
+    } else {
+      return Math.max(0.01, originalPrice - Number(discount_value))
+    }
+  }
+
+  const finalPrice = calculatePrice()
+  const hasPromotion = product && !!product.active_promotion
+
+  const handleBuyNow = async () => {
+    if (!authState.isAuthenticated) {
+      toast.error('请先登录', {
+        action: { label: '立即登录', onClick: () => navigate('/auth/login') },
+      })
+      return
+    }
+    if (!product) return
+
+    setBuyingNow(true)
+    // 通过路由 state 传递商品信息到结算页，绕过购物车
+    navigate('/member/checkout', {
+      state: {
+        buyNowItem: {
+          product_id: product.id,
+          product_name: product.name,
+          product_image: product.image_url,
+          unit_price: finalPrice, // 使用计算后的优惠价格
+          quantity: quantity,
+        },
+      },
+    })
+  }
+
+  const handleContactMerchant = () => {
+    if (!authState.isAuthenticated) {
+      toast.error('请先登录', {
+        action: { label: '立即登录', onClick: () => navigate('/auth/login') },
+      })
+      return
+    }
+    if (!product) return
+
+    const targetId = product.merchant_user_id || product.merchant_id
+    navigate(`/member/messages/${targetId}`, {
+      state: {
+        refProduct: {
+          id: product.id,
+          name: product.name,
+          price: finalPrice, // 使用优惠价
+          image: product.image_url,
+        },
+      },
+    })
   }
 
   const handleQuantityChange = (delta: number) => {
@@ -126,13 +239,24 @@ export default function ProductDetailPage() {
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="overflow-hidden rounded-xl border border-zinc-200 bg-white p-1.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+          className="overflow-hidden rounded-xl"
         >
           <div className="relative aspect-square overflow-hidden rounded-lg bg-zinc-50 dark:bg-zinc-800">
+            {hasPromotion && (
+              <div className="absolute top-4 left-4 z-10 rounded-full bg-rose-500 px-3 py-1 text-xs font-bold text-white shadow-lg">
+                {product.active_promotion?.discount_type === 'percent'
+                  ? `${Number((100 - product.active_promotion.discount_value) / 10)
+                      .toFixed(1)
+                      .replace(/\.0$/, '')}折`
+                  : `直降 ¥${product.active_promotion?.discount_value}`}
+              </div>
+            )}
+
             {product.image_url ? (
               <img
                 src={getFileUrl(product.image_url)}
                 alt={product.name}
+                loading="lazy"
                 className="h-full w-full object-cover object-center"
               />
             ) : (
@@ -143,9 +267,18 @@ export default function ProductDetailPage() {
 
             {/* Wishlist/Share Floating Actions */}
             <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-sm backdrop-blur-sm transition-all hover:bg-rose-50 hover:text-rose-500 dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:bg-zinc-700/90 dark:hover:text-rose-400">
-                <Heart size={16} />
-              </button>
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={toggleFavorite}
+                disabled={favLoading}
+                className={`flex h-8 w-8 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-all ${
+                  isFavorited
+                    ? 'bg-rose-50/90 text-rose-500 hover:bg-rose-100/90'
+                    : 'bg-white/90 text-zinc-600 hover:bg-rose-50 hover:text-rose-500 dark:bg-zinc-800/90 dark:text-zinc-400'
+                }`}
+              >
+                <Heart size={16} fill={isFavorited ? 'currentColor' : 'none'} />
+              </motion.button>
               <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-sm backdrop-blur-sm transition-all hover:bg-indigo-50 hover:text-indigo-500 dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:bg-zinc-700/90 dark:hover:text-indigo-400">
                 <Share2 size={16} />
               </button>
@@ -162,11 +295,54 @@ export default function ProductDetailPage() {
           {/* Header */}
           <div className="border-b border-zinc-200 pb-4">
             <h1 className="text-xl font-bold text-zinc-950 sm:text-2xl">{product.name}</h1>
-            <div className="mt-3 flex items-end gap-3">
-              <p className="text-2xl font-bold text-zinc-950">
-                ¥{Number(product.price).toFixed(2)}
-              </p>
-            </div>
+            {hasPromotion ? (
+              <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 dark:border-emerald-900/30 dark:bg-emerald-950/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs font-semibold text-emerald-600">活动价</span>
+                    <p className="text-3xl font-bold text-emerald-600">
+                      <span className="text-lg">¥</span>
+                      {finalPrice.toFixed(2)}
+                    </p>
+                    <div className="ml-2 flex flex-col items-start gap-0.5">
+                      <span className="text-xs text-black line-through">
+                        ¥{Number(product.price).toFixed(2)}
+                      </span>
+                      <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] leading-none font-bold text-white">
+                        {product.active_promotion?.discount_type === 'percent'
+                          ? `${Number((100 - product.active_promotion.discount_value) / 10)
+                              .toFixed(1)
+                              .replace(/\.0$/, '')}折`
+                          : `直降 ¥${product.active_promotion?.discount_value}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                  <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                    <span className="font-bold">已省</span>
+                    <span className="font-bold">
+                      ¥{(Number(product.price) - finalPrice).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="h-3 w-px bg-emerald-200 dark:bg-emerald-800" />
+                  <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                    {product.active_promotion?.title}
+                  </span>
+                  <div className="h-3 w-px bg-emerald-200 dark:bg-emerald-800" />
+                  <span className="text-emerald-600/80 dark:text-emerald-500/80">
+                    有效期: {new Date(product.active_promotion!.start_at).toLocaleDateString()} -{' '}
+                    {new Date(product.active_promotion!.end_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 flex items-baseline gap-3">
+                <p className="text-2xl font-bold text-zinc-950">¥{finalPrice.toFixed(2)}</p>
+              </div>
+            )}
+
             <div className="mt-3 flex items-center gap-3 text-xs text-zinc-500">
               <div className="flex items-center gap-1">
                 <span className="font-semibold text-zinc-950">{product.sales_count}</span>
@@ -229,6 +405,18 @@ export default function ProductDetailPage() {
 
             {/* Action Buttons */}
             <div className="flex gap-3">
+              {/* Contact Merchant Button */}
+              <button
+                onClick={handleContactMerchant}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-lg shadow-zinc-900/10 transition-all hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 sm:h-auto sm:w-16 sm:px-0 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus:ring-zinc-50 dark:focus:ring-offset-zinc-900"
+                title="联系客服"
+              >
+                <MessageSquare size={20} />
+                <span className="sr-only sm:not-sr-only sm:ml-1 sm:text-xs sm:font-medium">
+                  联系客服
+                </span>
+              </button>
+
               <button
                 onClick={handleAddToCart}
                 disabled={product.stock === 0 || adding}
@@ -237,12 +425,14 @@ export default function ProductDetailPage() {
                 {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingCart size={16} />}
                 {product.stock === 0 ? '暂时缺货' : adding ? '正在添加...' : '加入购物车'}
               </button>
-              {/* Buy Now Button (Optional) */}
+              {/* Buy Now Button */}
               <button
-                disabled={product.stock === 0 || adding}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold text-zinc-900 shadow-sm transition-all hover:bg-zinc-50 hover:border-zinc-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3 sm:text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+                onClick={handleBuyNow}
+                disabled={product.stock === 0 || adding || buyingNow}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-zinc-900 px-3 py-2.5 text-xs font-semibold text-white shadow-lg shadow-zinc-900/10 transition-all hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-500 disabled:shadow-none sm:px-6 sm:py-3 sm:text-sm dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
               >
-                立即购买
+                {buyingNow ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {buyingNow ? '正在处理...' : '立即购买'}
               </button>
             </div>
           </div>

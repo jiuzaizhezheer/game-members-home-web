@@ -69,13 +69,10 @@ async function fetchUserAndSetState(
       isInitializing: false,
     })
   } catch {
-    // 获取失败，清除状态
-    clearAccessToken()
-    setState({
-      user: null,
-      isAuthenticated: false,
-      isInitializing: false,
-    })
+    // 获取失败 (非401)，只需结束初始化状态
+    // 如果之前已登录，保持登录状态；如果之前未登录，保持未登录状态
+    // 如果是 401，http.ts 会发 auth:logout 事件，那里会负责清除状态
+    setState((prev) => ({ ...prev, isInitializing: false }))
   }
 }
 

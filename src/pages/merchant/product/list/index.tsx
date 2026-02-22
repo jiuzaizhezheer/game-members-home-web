@@ -11,7 +11,7 @@ import {
   Filter,
   Trash2,
 } from 'lucide-react'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm } from '@/components/ui/confirmContext'
 import { toast } from 'sonner'
 import { productService } from '@/features/product/service'
 import type { ProductOut, ProductListIn } from '@/features/product/types'
@@ -195,6 +195,7 @@ export default function ProductList() {
                             <img
                               src={getFileUrl(product.image_url)}
                               alt={product.name}
+                              loading="lazy"
                               className="h-full w-full object-cover object-center"
                             />
                           ) : (

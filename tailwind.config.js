@@ -8,4 +8,6 @@ export default {
   },
   // 插件列表，可引入第三方插件或自定义插件
   plugins: [],
+  // 强制使用 class 模式，不自动跟随系统。只要不添加 dark 类，就是全局亮色模式。
+  darkMode: 'class',
 }

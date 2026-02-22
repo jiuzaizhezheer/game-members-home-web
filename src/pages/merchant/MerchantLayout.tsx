@@ -10,14 +10,20 @@ import {
   ChevronRight,
   Menu,
   UserCircle,
+  MessageSquare,
+  Users,
+  TicketPercent,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { clearAccessToken } from '@/shared/auth/token'
+import { useAuth } from '@/contexts/AuthContext'
 
 const SIDEBAR_ITEMS = [
   { icon: LayoutDashboard, label: '工作台', path: '/merchant/workbench' },
+  { icon: MessageSquare, label: '消息中心', path: '/merchant/messages' },
   { icon: ShoppingBag, label: '订单管理', path: '/merchant/order/list' },
   { icon: Package, label: '商品管理', path: '/merchant/product/list' },
+  { icon: Users, label: '社区管理', path: '/merchant/community' },
+  { icon: TicketPercent, label: '营销中心', path: '/merchant/marketing/promotions' },
   { icon: UserCircle, label: '个人中心', path: '/merchant/account' },
   { icon: Store, label: '店铺设置', path: '/merchant/settings' },
 ]
@@ -27,10 +33,11 @@ export default function MerchantLayout() {
   const location = useLocation()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const { logout } = useAuth()
 
-  const handleLogout = () => {
-    clearAccessToken()
-    // TODO: 調用清除用户信息api
+  const handleLogout = async () => {
+    await logout()
     navigate('/auth/login')
   }
 
@@ -103,10 +110,9 @@ export default function MerchantLayout() {
           })}
         </nav>
 
-        {/* User Profile & Logout */}
         <div className="border-t border-zinc-100 p-3">
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-zinc-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 ${
               isCollapsed ? 'justify-center' : ''
             }`}
@@ -119,6 +125,49 @@ export default function MerchantLayout() {
           </button>
         </div>
       </motion.aside>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLogoutConfirm(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+            >
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                <LogOut size={24} />
+              </div>
+              <h3 className="mb-2 text-lg font-bold text-zinc-900">确认退出登录吗？</h3>
+              <p className="mb-6 text-sm text-zinc-500">
+                退出后您将需要重新验证身份才能访问商家管理后台。
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 rounded-full border border-zinc-200 py-2.5 text-sm font-bold text-zinc-500 hover:bg-zinc-50 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 rounded-full bg-rose-600 py-2.5 text-sm font-bold text-white shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all active:scale-95"
+                >
+                  确认退出
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth">

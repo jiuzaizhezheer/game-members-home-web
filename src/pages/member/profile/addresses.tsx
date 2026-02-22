@@ -11,7 +11,7 @@ import {
   type AddressOut,
 } from '@/features/address/types'
 import { useNavigate } from 'react-router-dom'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm } from '@/components/ui/confirmContext'
 
 export default function AddressListPage() {
   const navigate = useNavigate()

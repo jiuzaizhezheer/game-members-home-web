@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { ProductPromotionOut } from '../product/types'
 
 /** 购物车商品信息 */
 export type CartItemOut = {
@@ -7,8 +8,10 @@ export type CartItemOut = {
   product_name: string
   product_image: string | null
   unit_price: number
+  original_price: number | null
   quantity: number
   subtotal: number
+  active_promotion: ProductPromotionOut | null
 }
 
 /** 购物车信息 */

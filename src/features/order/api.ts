@@ -1,9 +1,15 @@
 import { requestJson } from '@/shared/api/http'
-import type { OrderOut, OrderCreateIn, OrderListOut } from './types'
+import type { OrderOut, OrderCreateIn, OrderListOut, BuyNowIn } from './types'
 
 export const orderApi = {
   createOrder: (data: OrderCreateIn) =>
     requestJson<OrderOut>('/orders/', {
+      method: 'POST',
+      body: data,
+    }),
+
+  buyNow: (data: BuyNowIn) =>
+    requestJson<OrderOut>('/orders/buy-now', {
       method: 'POST',
       body: data,
     }),

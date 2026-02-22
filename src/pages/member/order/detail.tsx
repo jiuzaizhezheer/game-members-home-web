@@ -1,12 +1,22 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ChevronLeft, Package, MapPin, CreditCard, Calendar, ArrowRight } from 'lucide-react'
+import {
+  ChevronLeft,
+  Package,
+  MapPin,
+  CreditCard,
+  Calendar,
+  ArrowRight,
+  Truck,
+  Copy,
+  CheckCircle2,
+} from 'lucide-react'
 import { orderService } from '@/features/order/service'
 import type { OrderOut } from '@/features/order/types'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { getFileUrl } from '@/shared/utils/file'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm } from '@/components/ui/confirmContext'
 
 import { PaymentModal } from '@/features/order/components/PaymentModal'
 
@@ -37,6 +47,11 @@ export default function OrderDetailPage() {
   }, [id, fetchOrderDetail])
 
   const confirm = useConfirm()
+
+  const handleCopyTrackingNo = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success('单号已复制到剪贴板')
+  }
 
   const handleCancel = async () => {
     if (!order) return
@@ -158,6 +173,44 @@ export default function OrderDetailPage() {
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Logistics Section */}
+          {order.courier_name && order.tracking_no && (
+            <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50/20 shadow-sm border-l-4 border-l-indigo-500 transition-all hover:shadow-md">
+              <div className="px-6 py-5">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg ${order.status === 'completed' ? 'bg-emerald-500 shadow-emerald-100' : 'bg-indigo-500 shadow-indigo-100'}`}
+                  >
+                    {order.status === 'completed' ? (
+                      <CheckCircle2 size={20} />
+                    ) : (
+                      <Truck size={20} />
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h3 className="text-base font-bold text-zinc-900">
+                        {order.status === 'completed' ? '物流派送已完毕' : '物流派送中'}
+                      </h3>
+                      <div className="mt-1 flex items-center gap-2 text-sm text-zinc-600 font-medium">
+                        <span>{order.courier_name}</span>
+                        <span className="h-1 w-1 rounded-full bg-zinc-300" />
+                        <span className="font-mono">{order.tracking_no}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleCopyTrackingNo(order.tracking_no!)}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 shadow-sm ring-1 ring-inset ring-indigo-200 hover:bg-indigo-50 transition-all active:scale-95 shrink-0 w-fit"
+                    >
+                      <Copy size={12} />
+                      复制单号
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Items Section */}
           <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all hover:shadow-md">
             <div className="border-b border-zinc-100 bg-zinc-50/50 px-6 py-4">
@@ -177,6 +230,7 @@ export default function OrderDetailPage() {
                       <img
                         src={getFileUrl(item.product_image)}
                         alt={item.product_name}
+                        loading="lazy"
                         className="h-full w-full object-cover object-center"
                       />
                     ) : (
@@ -213,7 +267,7 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Logistics Mockup */}
+          {/* Logistics Mockup - Order timeline */}
           {order.status !== 'cancelled' && order.status !== 'pending' && (
             <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
               <div className="border-b border-zinc-100 bg-zinc-50/50 px-6 py-4">
@@ -224,6 +278,31 @@ export default function OrderDetailPage() {
               </div>
               <div className="p-6">
                 <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-indigo-500 before:via-indigo-300 before:to-zinc-100">
+                  {/* Dynamically added status nodes could go here */}
+                  {order.status === 'completed' && (
+                    <div className="relative flex items-center gap-6">
+                      <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-100">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                      <div className="ml-14">
+                        <p className="text-sm font-semibold text-zinc-900">订单已完成</p>
+                        <p className="mt-0.5 text-xs text-zinc-500">期待再次为您服务</p>
+                      </div>
+                    </div>
+                  )}
+                  {(order.status === 'shipped' || order.status === 'completed') && (
+                    <div className="relative flex items-center gap-6">
+                      <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500 text-white shadow-lg shadow-indigo-100">
+                        <Truck className="w-5 h-5" />
+                      </div>
+                      <div className="ml-14">
+                        <p className="text-sm font-semibold text-zinc-900">商品已发货</p>
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          {order.courier_name}: {order.tracking_no}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div className="relative flex items-center gap-6">
                     <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500 text-white shadow-lg shadow-indigo-200">
                       <ArrowRight className="w-5 h-5" />
