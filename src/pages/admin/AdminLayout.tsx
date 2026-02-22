@@ -5,7 +5,6 @@ import {
   Users,
   Store,
   Package,
-  ShoppingCart,
   FileSearch,
   ShieldCheck,
   LogOut,
@@ -13,6 +12,7 @@ import {
   ChevronRight,
   Menu,
   MessageCircle,
+  FileText,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
@@ -23,17 +23,16 @@ import { useAuth } from '@/contexts/AuthContext'
  * - 用户管理（后续扩展）
  * - 商家管理（后续扩展）
  * - 商品管理（后续扩展）
- * - 订单管理（后续扩展）
- * - 内容审核（后续扩展）
+ * - 内容审核
  */
 const SIDEBAR_ITEMS = [
   { icon: LayoutDashboard, label: '仪表盘', path: '/admin/dashboard' },
-  { icon: Users, label: '用户管理', path: '/admin/users', disabled: true },
-  { icon: Store, label: '商家管理', path: '/admin/merchants', disabled: true },
-  { icon: Package, label: '商品管理', path: '/admin/products', disabled: true },
-  { icon: ShoppingCart, label: '订单管理', path: '/admin/orders', disabled: true },
+  { icon: Users, label: '用户管理', path: '/admin/users' },
+  { icon: Store, label: '商家管理', path: '/admin/merchants' },
+  { icon: Package, label: '商品管理', path: '/admin/products' },
   { icon: MessageCircle, label: '社群管理', path: '/admin/community' },
-  { icon: FileSearch, label: '内容审核', path: '/admin/audit', disabled: true },
+  { icon: FileSearch, label: '内容审核', path: '/admin/content' },
+  { icon: FileText, label: '操作日志', path: '/admin/logs' },
 ]
 
 export default function AdminLayout() {
@@ -50,7 +49,7 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50/50 text-zinc-900">
+    <div className="flex h-screen overflow-hidden bg-gray-50/50 text-zinc-900">
       {/* Mobile Menu Backdrop */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -93,29 +92,6 @@ export default function AdminLayout() {
         <nav className="flex-1 space-y-1 px-3 py-4">
           {SIDEBAR_ITEMS.map((item) => {
             const isActive = location.pathname.startsWith(item.path)
-            const isDisabled = item.disabled
-
-            if (isDisabled) {
-              return (
-                <div
-                  key={item.path}
-                  className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-zinc-300 cursor-not-allowed ${
-                    isCollapsed ? 'justify-center' : ''
-                  }`}
-                  title="即将上线"
-                >
-                  <item.icon size={20} className="shrink-0 text-zinc-300" />
-                  {!isCollapsed && (
-                    <span className="font-medium flex items-center gap-2">
-                      {item.label}
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-400">
-                        即将上线
-                      </span>
-                    </span>
-                  )}
-                </div>
-              )
-            }
 
             return (
               <NavLink
@@ -200,7 +176,7 @@ export default function AdminLayout() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-x-hidden">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto">
         {/* Mobile Header */}
         <div className="flex h-16 items-center border-b border-zinc-200 bg-white px-4 shadow-sm lg:hidden">
           <button

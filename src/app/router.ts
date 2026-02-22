@@ -51,6 +51,11 @@ const PromotionCreatePage = lazy(() => import('@/pages/merchant/marketing/promot
 // Admin
 const AdminDashboard = lazy(() => import('@/pages/admin/dashboard'))
 const AdminCommunityPage = lazy(() => import('@/pages/admin/community'))
+const AdminUsersPage = lazy(() => import('@/pages/admin/users'))
+const AdminMerchantsPage = lazy(() => import('@/pages/admin/merchants'))
+const AdminProductsPage = lazy(() => import('@/pages/admin/products'))
+const AdminContentPage = lazy(() => import('@/pages/admin/content'))
+const AdminLogsPage = lazy(() => import('@/pages/admin/logs'))
 
 // ─── Helper: wrap a lazy element in Suspense (null fallback - layout handles UI) ─
 const s = (element: React.ReactNode) => createElement(Suspense, { fallback: null }, element)
@@ -141,6 +146,11 @@ export const router = createBrowserRouter([
       { index: true, element: createElement(Navigate, { to: 'dashboard', replace: true }) },
       { path: 'dashboard', element: s(createElement(AdminDashboard)) },
       { path: 'community', element: s(createElement(AdminCommunityPage)) },
+      { path: 'users', element: s(createElement(AdminUsersPage)) },
+      { path: 'merchants', element: s(createElement(AdminMerchantsPage)) },
+      { path: 'products', element: s(createElement(AdminProductsPage)) },
+      { path: 'content', element: s(createElement(AdminContentPage)) },
+      { path: 'logs', element: s(createElement(AdminLogsPage)) },
     ],
   },
 ])
