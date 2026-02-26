@@ -15,6 +15,8 @@ export type ProductOut = {
   sales_count: number
   popularity_score: number
   category_ids: string[]
+  rating?: number | string
+  review_count?: number
 }
 
 export type ProductPromotionOut = {
@@ -39,6 +41,8 @@ export type ProductPublicOut = Pick<
   | 'sales_count'
   | 'popularity_score'
   | 'category_ids'
+  | 'rating'
+  | 'review_count'
 > & {
   merchant_user_id?: string
   active_promotion?: ProductPromotionOut | null

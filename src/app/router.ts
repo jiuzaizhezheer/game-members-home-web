@@ -45,6 +45,7 @@ const MerchantSettings = lazy(() => import('@/pages/merchant/profile'))
 const MerchantMessageList = lazy(() => import('@/pages/merchant/message/list'))
 const MerchantChatPage = lazy(() => import('@/pages/merchant/message/chat'))
 const MerchantCommunityPage = lazy(() => import('@/pages/merchant/community'))
+const MerchantReviewPage = lazy(() => import('@/pages/merchant/reviews/index'))
 const PromotionListPage = lazy(() => import('@/pages/merchant/marketing/promotions/index'))
 const PromotionCreatePage = lazy(() => import('@/pages/merchant/marketing/promotions/create'))
 
@@ -135,6 +136,7 @@ export const router = createBrowserRouter([
       { path: 'marketing/promotions', element: s(createElement(PromotionListPage)) },
       { path: 'marketing/promotions/create', element: s(createElement(PromotionCreatePage)) },
       { path: 'marketing/promotions/:id/edit', element: s(createElement(PromotionCreatePage)) },
+      { path: 'reviews', element: s(createElement(MerchantReviewPage)) },
     ],
   },
 

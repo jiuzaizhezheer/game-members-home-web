@@ -131,3 +131,29 @@ export type AdminLogListOut = {
   page: number
   page_size: number
 }
+// --- 评价管理 ---
+export type AdminReviewItemOut = {
+  id: string
+  product_id: string
+  order_id: string
+  user: {
+    id: string
+    username: string
+    avatar: string | null
+  }
+  rating: number
+  content: string
+  images: string[]
+  merchant_reply: string | null
+  reply_at: string | null
+  product_name: string | null
+  product_image: string | null
+  created_at: string
+}
+
+export type AdminReviewListOut = {
+  items: AdminReviewItemOut[]
+  total: number
+  page: number
+  page_size: number
+}

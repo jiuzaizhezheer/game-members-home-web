@@ -10,6 +10,7 @@ import type {
   AdminCommentListOut,
   AdminLogListOut,
   DashboardStats,
+  AdminReviewListOut,
 } from './types'
 import type { GroupCreateIn, GroupItemOut } from '@/features/community/types'
 
@@ -34,7 +35,7 @@ export const adminApi = {
 
   /** 创建社群话题圈 */
   async createCommunityGroup(data: GroupCreateIn): Promise<GroupItemOut> {
-    return await requestJson<GroupItemOut>('/admins/community/groups', {
+    return await requestJson<GroupItemOut>('/admins/communities/groups', {
       method: 'POST',
       body: data,
     })
@@ -147,21 +148,21 @@ export const adminApi = {
     if (params?.keyword) query.set('keyword', params.keyword)
     if (params?.is_hidden !== undefined) query.set('is_hidden', String(params.is_hidden))
     const qs = query.toString()
-    return await requestJson<AdminPostListOut>(`/admins/community/posts${qs ? `?${qs}` : ''}`, {
+    return await requestJson<AdminPostListOut>(`/admins/communities/posts${qs ? `?${qs}` : ''}`, {
       method: 'GET',
     })
   },
 
   /** 审核帖子（隐藏/显示） */
   async reviewPost(id: string, is_hidden: boolean): Promise<void> {
-    await requestJson<void>(`/admins/community/posts/${id}/review?is_hidden=${is_hidden}`, {
+    await requestJson<void>(`/admins/communities/posts/${id}/review?is_hidden=${is_hidden}`, {
       method: 'PATCH',
     })
   },
 
   /** 删除帖子 */
   async deletePost(id: string): Promise<void> {
-    await requestJson<void>(`/admins/community/posts/${id}`, { method: 'DELETE' })
+    await requestJson<void>(`/admins/communities/posts/${id}`, { method: 'DELETE' })
   },
 
   /** 获取全平台评论列表 */
@@ -176,13 +177,36 @@ export const adminApi = {
     if (params?.post_id) query.set('post_id', params.post_id)
     const qs = query.toString()
     return await requestJson<AdminCommentListOut>(
-      `/admins/community/comments${qs ? `?${qs}` : ''}`,
+      `/admins/communities/comments${qs ? `?${qs}` : ''}`,
       { method: 'GET' },
     )
   },
 
   /** 删除评论 */
   async deleteComment(id: string): Promise<void> {
-    await requestJson<void>(`/admins/community/comments/${id}`, { method: 'DELETE' })
+    await requestJson<void>(`/admins/communities/comments/${id}`, { method: 'DELETE' })
+  },
+
+  // --- 评价管理 ---
+
+  /** 获取全平台评价列表 */
+  async getReviews(params?: {
+    page?: number
+    page_size?: number
+    keyword?: string
+  }): Promise<AdminReviewListOut> {
+    const query = new URLSearchParams()
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.page_size) query.set('page_size', String(params.page_size))
+    if (params?.keyword) query.set('keyword', params.keyword)
+    const qs = query.toString()
+    return await requestJson<AdminReviewListOut>(`/admins/reviews${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    })
+  },
+
+  /** 删除评价 */
+  async deleteReview(id: string): Promise<void> {
+    await requestJson<void>(`/admins/reviews/${id}`, { method: 'DELETE' })
   },
 }

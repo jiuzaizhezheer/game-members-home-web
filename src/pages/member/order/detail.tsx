@@ -10,15 +10,18 @@ import {
   Truck,
   Copy,
   CheckCircle2,
+  AlertCircle,
 } from 'lucide-react'
 import { orderService } from '@/features/order/service'
-import type { OrderOut } from '@/features/order/types'
+import type { OrderOut, OrderRefundOut } from '@/features/order/types'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { getFileUrl } from '@/shared/utils/file'
 import { useConfirm } from '@/components/ui/confirmContext'
 
 import { PaymentModal } from '@/features/order/components/PaymentModal'
+import { ApplyRefundModal } from '@/features/order/components/ApplyRefundModal'
+import { ReviewModal } from '@/features/review/components/ReviewModal'
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -26,12 +29,36 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderOut | null>(null)
   const [loading, setLoading] = useState(true)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [isRefundModalOpen, setIsRefundModalOpen] = useState(false)
+  const [refundDetail, setRefundDetail] = useState<OrderRefundOut | null>(null)
+
+  // Review Modal State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [reviewItem, setReviewItem] = useState<{
+    productId: string
+    productName: string
+    productImage?: string | null
+  } | null>(null)
 
   const fetchOrderDetail = useCallback(async (orderId: string) => {
     try {
       setLoading(true)
       const data = await orderService.getOrderDetail(orderId)
       setOrder(data)
+
+      // Fetch refund detail if status implies it
+      if (
+        ['refunding', 'refunded', 'closed'].includes(data.status) ||
+        data.refund_status === 'rejected' ||
+        data.refund_status === 'pending'
+      ) {
+        try {
+          const refund = await orderService.getRefundDetail(orderId)
+          setRefundDetail(refund)
+        } catch (e) {
+          console.error('Failed to fetch refund details', e)
+        }
+      }
     } catch (error) {
       toast.error('获取订单详情失败')
       console.error(error)
@@ -45,6 +72,19 @@ export default function OrderDetailPage() {
       fetchOrderDetail(id)
     }
   }, [id, fetchOrderDetail])
+
+  const handleRefundConfirm = async (reason: string) => {
+    if (!order) return
+    try {
+      await orderService.applyRefund(order.id, { reason })
+      toast.success('售后申请已提交，请等待商家处理')
+      fetchOrderDetail(order.id)
+    } catch (error) {
+      console.error('Failed to apply refund', error)
+      toast.error('申请失败')
+      throw error
+    }
+  }
 
   const confirm = useConfirm()
 
@@ -107,6 +147,15 @@ export default function OrderDetailPage() {
     }
   }
 
+  const handleOpenReviewModal = (
+    productId: string,
+    productName: string,
+    productImage?: string | null,
+  ) => {
+    setReviewItem({ productId, productName, productImage })
+    setIsReviewModalOpen(true)
+  }
+
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -135,6 +184,8 @@ export default function OrderDetailPage() {
     shipped: { label: '已发货', color: 'text-indigo-600 bg-indigo-50' },
     completed: { label: '已完成', color: 'text-emerald-600 bg-emerald-50' },
     cancelled: { label: '已取消', color: 'text-zinc-500 bg-zinc-50' },
+    refunding: { label: '退款中', color: 'text-rose-600 bg-rose-50' },
+    refunded: { label: '已退款', color: 'text-zinc-400 bg-zinc-100' },
   }
 
   const currentStatus = statusMap[order.status] || {
@@ -162,10 +213,18 @@ export default function OrderDetailPage() {
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900">订单详情</h1>
             <p className="mt-1 text-sm text-zinc-500">订单号: {order.order_no}</p>
           </div>
-          <div
-            className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${currentStatus.color}`}
-          >
-            {currentStatus.label}
+          <div className="flex items-center gap-2">
+            {order.refund_status === 'rejected' && (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                <AlertCircle className="w-4 h-4" />
+                售后申请已驳回
+              </div>
+            )}
+            <div
+              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${currentStatus.color}`}
+            >
+              {currentStatus.label}
+            </div>
           </div>
         </div>
       </div>
@@ -253,6 +312,26 @@ export default function OrderDetailPage() {
                     <p className="text-base font-semibold text-zinc-900">
                       ¥{(Number(item.unit_price) * item.quantity).toFixed(2)}
                     </p>
+                    {order.status === 'completed' && !item.is_reviewed && (
+                      <button
+                        onClick={() =>
+                          handleOpenReviewModal(
+                            item.product_id,
+                            item.product_name,
+                            item.product_image,
+                          )
+                        }
+                        className="mt-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-indigo-600 shadow-sm ring-1 ring-inset ring-indigo-200 hover:bg-indigo-50 transition-colors"
+                      >
+                        去评价
+                      </button>
+                    )}
+                    {order.status === 'completed' && item.is_reviewed && (
+                      <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500 ring-1 ring-inset ring-zinc-200">
+                        <CheckCircle2 className="w-3 h-3" />
+                        已评价
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -278,19 +357,73 @@ export default function OrderDetailPage() {
               </div>
               <div className="p-6">
                 <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-indigo-500 before:via-indigo-300 before:to-zinc-100">
-                  {/* Dynamically added status nodes could go here */}
-                  {order.status === 'completed' && (
+                  {/* Refund events at the top */}
+                  {order.status === 'refunded' && (
+                    <div className="relative flex items-center gap-6">
+                      <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-500 text-white shadow-lg shadow-zinc-100">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                      <div className="ml-14">
+                        <p className="text-sm font-semibold text-zinc-900">退款成功</p>
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          售后申请已完成，款项将原路退回
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {order.refund_status === 'rejected' && (
+                    <div className="relative flex items-center gap-6">
+                      <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg shadow-amber-100">
+                        <AlertCircle className="w-5 h-5" />
+                      </div>
+                      <div className="ml-14">
+                        <p className="text-sm font-semibold text-zinc-900">售后申请被驳回</p>
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          商家已拒绝退款申请，您可以联系客服详谈
+                        </p>
+                        {refundDetail?.merchant_reply && (
+                          <div className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 border border-amber-200/50">
+                            商家回复: {refundDetail.merchant_reply}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {order.status === 'refunding' && (
+                    <div className="relative flex items-center gap-6">
+                      <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg shadow-rose-100 animate-pulse">
+                        <AlertCircle className="w-5 h-5" />
+                      </div>
+                      <div className="ml-14">
+                        <p className="text-sm font-semibold text-zinc-900">售后申请处理中</p>
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          请耐心等待商家审核您的售后申请
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Standard Milestones based on timestamps */}
+                  {order.completed_at && (
                     <div className="relative flex items-center gap-6">
                       <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-100">
                         <CheckCircle2 className="w-5 h-5" />
                       </div>
                       <div className="ml-14">
                         <p className="text-sm font-semibold text-zinc-900">订单已完成</p>
-                        <p className="mt-0.5 text-xs text-zinc-500">期待再次为您服务</p>
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          感谢您的支持，期待再次为您服务
+                        </p>
+                        <p className="mt-1 text-[10px] text-zinc-400 font-mono">
+                          {new Date(order.completed_at).toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   )}
-                  {(order.status === 'shipped' || order.status === 'completed') && (
+
+                  {order.shipped_at && (
                     <div className="relative flex items-center gap-6">
                       <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500 text-white shadow-lg shadow-indigo-100">
                         <Truck className="w-5 h-5" />
@@ -300,16 +433,38 @@ export default function OrderDetailPage() {
                         <p className="mt-0.5 text-xs text-zinc-500">
                           {order.courier_name}: {order.tracking_no}
                         </p>
+                        <p className="mt-1 text-[10px] text-zinc-400 font-mono">
+                          {new Date(order.shipped_at).toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   )}
+
+                  {order.paid_at && (
+                    <div className="relative flex items-center gap-6">
+                      <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500 text-white shadow-lg shadow-indigo-100">
+                        <CreditCard className="w-5 h-5" />
+                      </div>
+                      <div className="ml-14">
+                        <p className="text-sm font-semibold text-zinc-900">支付成功</p>
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          您的订单已支付成功，商家正在处理中
+                        </p>
+                        <p className="mt-1 text-[10px] text-zinc-400 font-mono">
+                          {new Date(order.paid_at).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="relative flex items-center gap-6">
                     <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500 text-white shadow-lg shadow-indigo-200">
                       <ArrowRight className="w-5 h-5" />
                     </div>
                     <div className="ml-14">
                       <p className="text-sm font-semibold text-zinc-900">订单创建成功</p>
-                      <p className="mt-0.5 text-xs text-zinc-500">
+                      <p className="mt-0.5 text-xs text-zinc-500">订单号: {order.order_no}</p>
+                      <p className="mt-1 text-[10px] text-zinc-400 font-mono">
                         {new Date(order.created_at).toLocaleString()}
                       </p>
                     </div>
@@ -346,8 +501,10 @@ export default function OrderDetailPage() {
                 <span className="text-zinc-500">支付状态</span>
                 <span
                   className={`font-medium ${
-                    order.status === 'pending'
-                      ? 'text-amber-600'
+                    ['pending', 'refunding', 'refunded'].includes(order.status)
+                      ? order.status === 'pending'
+                        ? 'text-amber-600'
+                        : 'text-rose-600'
                       : order.status === 'cancelled'
                         ? 'text-zinc-400'
                         : 'text-emerald-600'
@@ -357,7 +514,11 @@ export default function OrderDetailPage() {
                     ? '待支付'
                     : order.status === 'cancelled'
                       ? '已取消'
-                      : '已支付'}
+                      : order.status === 'refunded'
+                        ? '已退款'
+                        : order.status === 'refunding'
+                          ? '退款中'
+                          : '已支付'}
                 </span>
               </div>
             </div>
@@ -380,25 +541,99 @@ export default function OrderDetailPage() {
               </button>
             </div>
           )}
-          {order.status === 'shipped' && (
+          {(order.status === 'shipped' ||
+            order.status === 'paid' ||
+            order.status === 'completed') && (
             <div className="flex flex-col gap-3">
+              {order.status === 'shipped' && (
+                <button
+                  onClick={handleReceipt}
+                  className="w-full rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  确认收货
+                </button>
+              )}
               <button
-                onClick={handleReceipt}
-                className="w-full rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                onClick={() => setIsRefundModalOpen(true)}
+                className="w-full rounded-full border border-zinc-200 bg-white px-6 py-3 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-all active:scale-[0.98]"
               >
-                确认收货
+                申请退款/售后
               </button>
+            </div>
+          )}
+
+          {/* Refund Progress Card */}
+          {['refunding', 'refunded'].includes(order.status) && refundDetail && (
+            <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-6 shadow-sm shadow-rose-100/50 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-rose-500 rounded-l-2xl"></div>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-rose-500" />
+                  <h2 className="font-semibold text-rose-900">售后服务</h2>
+                </div>
+                <span
+                  className={`text-xs font-semibold px-2 py-1 rounded-full ${refundDetail.status === 'pending' ? 'bg-amber-100 text-amber-700' : refundDetail.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}
+                >
+                  {refundDetail.status === 'pending'
+                    ? '等待商家处理'
+                    : refundDetail.status === 'approved'
+                      ? '商家已同意'
+                      : '商家已拒绝'}
+                </span>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-start">
+                  <span className="text-zinc-500">退款金额</span>
+                  <span className="font-semibold text-zinc-900">
+                    ¥{Number(refundDetail.amount).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-start gap-4">
+                  <span className="text-zinc-500 shrink-0">退款原因</span>
+                  <span className="text-right text-zinc-900">{refundDetail.reason}</span>
+                </div>
+                {refundDetail.status === 'rejected' && refundDetail.merchant_reply && (
+                  <div className="mt-3 bg-red-50/50 border border-red-100 rounded-xl p-3 text-red-800">
+                    <span className="font-semibold block mb-1">商家拒绝原因：</span>
+                    {refundDetail.merchant_reply}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
       </div>
       {order && (
-        <PaymentModal
-          isOpen={isPaymentModalOpen}
-          onClose={() => setIsPaymentModalOpen(false)}
-          onSuccess={handlePaymentSuccess}
+        <>
+          <PaymentModal
+            isOpen={isPaymentModalOpen}
+            onClose={() => setIsPaymentModalOpen(false)}
+            onSuccess={handlePaymentSuccess}
+            orderId={order.id}
+            amount={Number(order.total_amount)}
+          />
+          <ApplyRefundModal
+            isOpen={isRefundModalOpen}
+            onClose={() => setIsRefundModalOpen(false)}
+            onConfirm={handleRefundConfirm}
+            maxAmount={Number(order.total_amount)}
+          />
+        </>
+      )}
+
+      {order && reviewItem && (
+        <ReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false)
+            setReviewItem(null)
+          }}
+          onSuccess={() => fetchOrderDetail(order.id)}
           orderId={order.id}
-          amount={Number(order.total_amount)}
+          productId={reviewItem.productId}
+          productName={reviewItem.productName}
+          productImage={reviewItem.productImage}
         />
       )}
     </motion.div>

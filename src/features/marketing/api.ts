@@ -7,7 +7,7 @@ import {
   type PromotionUpdateIn,
 } from './types'
 
-const BASE_URL = '/merchant/promotions'
+const BASE_URL = '/merchants/promotions'
 
 export const promotionApi = {
   list: (params?: { page?: number; page_size?: number }) => {

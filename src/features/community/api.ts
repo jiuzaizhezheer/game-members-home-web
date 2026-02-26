@@ -17,25 +17,25 @@ export const communityApi = {
       page: page.toString(),
       page_size: pageSize.toString(),
     })
-    return requestJson<GroupListOut>(`/community/groups?${params.toString()}`, {
+    return requestJson<GroupListOut>(`/communities/groups?${params.toString()}`, {
       method: 'GET',
     })
   },
 
   getGroupDetail: async (groupId: string) => {
-    return requestJson<GroupDetailOut>(`/community/groups/${groupId}`, {
+    return requestJson<GroupDetailOut>(`/communities/groups/${groupId}`, {
       method: 'GET',
     })
   },
 
   joinGroup: async (groupId: string) => {
-    return requestJson<void>(`/community/groups/${groupId}/join`, {
+    return requestJson<void>(`/communities/groups/${groupId}/join`, {
       method: 'POST',
     })
   },
 
   leaveGroup: async (groupId: string) => {
-    return requestJson<void>(`/community/groups/${groupId}/leave`, {
+    return requestJson<void>(`/communities/groups/${groupId}/leave`, {
       method: 'POST',
     })
   },
@@ -46,26 +46,26 @@ export const communityApi = {
       page: page.toString(),
       page_size: pageSize.toString(),
     })
-    return requestJson<PostListOut>(`/community/groups/${groupId}/posts?${params.toString()}`, {
+    return requestJson<PostListOut>(`/communities/groups/${groupId}/posts?${params.toString()}`, {
       method: 'GET',
     })
   },
 
   getPostDetail: async (postId: string) => {
-    return requestJson<PostDetailOut>(`/community/posts/${postId}`, {
+    return requestJson<PostDetailOut>(`/communities/posts/${postId}`, {
       method: 'GET',
     })
   },
 
   createPost: async (data: PostCreateIn) => {
-    return requestJson<PostDetailOut>('/community/posts', {
+    return requestJson<PostDetailOut>('/communities/posts', {
       method: 'POST',
       body: data,
     })
   },
 
   updatePost: async (postId: string, data: Partial<PostCreateIn>) => {
-    return requestJson<PostDetailOut>(`/community/posts/${postId}`, {
+    return requestJson<PostDetailOut>(`/communities/posts/${postId}`, {
       method: 'PUT',
       body: data,
     })
@@ -76,7 +76,7 @@ export const communityApi = {
       page: page.toString(),
       page_size: pageSize.toString(),
     })
-    return requestJson<PostListOut>(`/community/my-posts?${params.toString()}`, {
+    return requestJson<PostListOut>(`/communities/my-posts?${params.toString()}`, {
       method: 'GET',
     })
   },
@@ -87,7 +87,7 @@ export const communityApi = {
       page: page.toString(),
       page_size: pageSize.toString(),
     })
-    return requestJson<PostListOut>(`/community/search?${params.toString()}`, {
+    return requestJson<PostListOut>(`/communities/search?${params.toString()}`, {
       method: 'GET',
     })
   },
@@ -98,13 +98,16 @@ export const communityApi = {
       page: page.toString(),
       page_size: pageSize.toString(),
     })
-    return requestJson<CommentListOut>(`/community/posts/${postId}/comments?${params.toString()}`, {
-      method: 'GET',
-    })
+    return requestJson<CommentListOut>(
+      `/communities/posts/${postId}/comments?${params.toString()}`,
+      {
+        method: 'GET',
+      },
+    )
   },
 
   createComment: async (postId: string, data: CommentCreateIn) => {
-    return requestJson<CommentItemOut>(`/community/posts/${postId}/comments`, {
+    return requestJson<CommentItemOut>(`/communities/posts/${postId}/comments`, {
       method: 'POST',
       body: data,
     })
@@ -112,7 +115,7 @@ export const communityApi = {
 
   // --- Likes ---
   toggleLike: async (targetId: string, targetType: 'post' | 'comment') => {
-    return requestJson<boolean>('/community/likes', {
+    return requestJson<boolean>('/communities/likes', {
       method: 'POST',
       body: { target_id: targetId, target_type: targetType },
     })
