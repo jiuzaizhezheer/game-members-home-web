@@ -4,20 +4,32 @@ import { motion } from 'framer-motion'
 import { Package, PackageX, Truck, CheckCircle2, AlertCircle, Clock } from 'lucide-react'
 
 import { merchantService } from '@/features/merchant/service'
+import { merchantApi } from '@/features/merchant/api'
 import type { OrderOut } from '@/features/order/types'
 import type { OrderListOut } from '@/features/order/types'
 import { getFileUrl } from '@/shared/utils/file'
 import { ShipmentModal } from './ShipmentModal'
+import { AuditRefundModal } from './AuditRefundModal'
 import type { OrderShipIn } from '@/features/order/types'
+import { orderApi } from '@/features/order/api'
 
 // Status Badge Component
-const StatusBadge = ({ status }: { status: string }) => {
+const StatusBadge = ({
+  status,
+  refundStatus,
+}: {
+  status: string
+  refundStatus?: string | null
+}) => {
   const styles = {
     pending: 'bg-amber-50 text-amber-700 ring-amber-600/20',
     paid: 'bg-blue-50 text-blue-700 ring-blue-600/20',
     shipped: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
     completed: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
     cancelled: 'bg-zinc-50 text-zinc-700 ring-zinc-600/20',
+    refunding: 'bg-rose-50 text-rose-700 ring-rose-600/20',
+    refunded: 'bg-zinc-50 text-zinc-700 ring-zinc-600/20',
+    closed: 'bg-zinc-50 text-zinc-700 ring-zinc-600/20',
   }
 
   const labels = {
@@ -26,6 +38,9 @@ const StatusBadge = ({ status }: { status: string }) => {
     shipped: '已发货',
     completed: '已完成',
     cancelled: '已取消',
+    refunding: '退款中',
+    refunded: '已退款',
+    closed: '已关闭',
   }
 
   const icons = {
@@ -34,17 +49,27 @@ const StatusBadge = ({ status }: { status: string }) => {
     shipped: Truck,
     completed: CheckCircle2,
     cancelled: PackageX,
+    refunding: AlertCircle,
+    refunded: PackageX,
+    closed: PackageX,
   }
 
   const Icon = icons[status as keyof typeof icons] || AlertCircle
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${styles[status as keyof typeof styles] || styles.pending}`}
-    >
-      <Icon size={12} />
-      {labels[status as keyof typeof labels] || status}
-    </span>
+    <div className="flex items-center gap-2">
+      {refundStatus === 'rejected' && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
+          售后驳回
+        </span>
+      )}
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${styles[status as keyof typeof styles] || styles.pending}`}
+      >
+        <Icon size={12} />
+        {labels[status as keyof typeof labels] || status}
+      </span>
+    </div>
   )
 }
 
@@ -52,7 +77,15 @@ export default function MerchantOrderList() {
   const [orders, setOrders] = useState<OrderOut[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  type OrderStatusTab = 'all' | 'pending' | 'paid' | 'shipped' | 'completed'
+  type OrderStatusTab =
+    | 'all'
+    | 'pending'
+    | 'paid'
+    | 'shipped'
+    | 'completed'
+    | 'refunding'
+    | 'refunded'
+    | 'rejected'
   const [activeTab, setActiveTab] = useState<OrderStatusTab>('paid')
 
   // Shipment Modal State
@@ -65,13 +98,22 @@ export default function MerchantOrderList() {
     { id: 'paid', label: '待发货' },
     { id: 'shipped', label: '已发货' },
     { id: 'completed', label: '已完成' },
+    { id: 'refunding', label: '售后/退款' },
+    { id: 'refunded', label: '已退款' },
+    { id: 'rejected', label: '已驳回' },
   ]
 
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true)
-      const statusFilter = activeTab === 'all' ? undefined : activeTab
-      const res: OrderListOut = await merchantService.getOrders(page, 100, statusFilter)
+      const statusFilter = activeTab === 'all' || activeTab === 'rejected' ? undefined : activeTab
+      const refundStatusFilter = activeTab === 'rejected' ? 'rejected' : undefined
+      const res: OrderListOut = await merchantService.getOrders(
+        page,
+        100,
+        statusFilter,
+        refundStatusFilter,
+      )
       setOrders(res.items || [])
     } catch (error) {
       console.error('Failed to fetch orders', error)
@@ -103,6 +145,34 @@ export default function MerchantOrderList() {
       console.error('Ship order failed', error)
       toast.error('发货失败')
       throw error // Let the modal handles isSubmitting
+    }
+  }
+
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false)
+
+  const handleAuditClick = (e: React.MouseEvent, order: OrderOut) => {
+    e.preventDefault()
+    setSelectedOrder(order)
+    setIsAuditModalOpen(true)
+  }
+
+  const handleAuditConfirm = async (status: 'approved' | 'rejected', merchant_reply: string) => {
+    if (!selectedOrder) return
+    try {
+      // API call expects refund_id, but the order structure only has `status === 'refunding'`.
+      // We will need to fetch the refund detail to get the refund ID first.
+      const detail = await orderApi.getRefundDetail(selectedOrder.id).catch(() => null)
+      if (!detail) {
+        toast.error('找不到关联的退款记录')
+        return
+      }
+      await merchantApi.auditRefund(detail.id, { status, merchant_reply })
+      toast.success('审批完成')
+      fetchOrders() // Refresh the list
+    } catch (error) {
+      console.error('Audit failed', error)
+      toast.error('审批操作失败')
+      throw error
     }
   }
 
@@ -165,7 +235,7 @@ export default function MerchantOrderList() {
                       : '未指定'}
                   </span>
                 </div>
-                <StatusBadge status={order.status} />
+                <StatusBadge status={order.status} refundStatus={order.refund_status} />
               </div>
               {order.address && (
                 <div className="border-b border-zinc-100 bg-zinc-50/50 px-6 py-2 text-xs text-zinc-500">
@@ -233,6 +303,14 @@ export default function MerchantOrderList() {
                         立即发货
                       </button>
                     )}
+                    {order.status === 'refunding' && (
+                      <button
+                        onClick={(e) => handleAuditClick(e, order)}
+                        className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:bg-rose-700 transition-all active:scale-[0.98]"
+                      >
+                        处理售后
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -245,6 +323,12 @@ export default function MerchantOrderList() {
         isOpen={isShipModalOpen}
         onClose={() => setIsShipModalOpen(false)}
         onConfirm={handleShipConfirm}
+        order={selectedOrder}
+      />
+      <AuditRefundModal
+        isOpen={isAuditModalOpen}
+        onClose={() => setIsAuditModalOpen(false)}
+        onConfirm={handleAuditConfirm}
         order={selectedOrder}
       />
     </div>

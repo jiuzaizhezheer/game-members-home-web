@@ -10,8 +10,18 @@ import type {
   AdminCommentListOut,
   AdminLogListOut,
   DashboardStats,
+  AdminReviewListOut,
+  AdminBannerItemOut,
+  AdminBannerListOut,
+  AdminCouponItemOut,
+  AdminCouponListOut,
 } from './types'
 import type { GroupCreateIn, GroupItemOut } from '@/features/community/types'
+import type { CouponCreateIn } from '@/features/marketing/types'
+
+type AdminCouponUpdateIn = Partial<CouponCreateIn> & {
+  status?: 'active' | 'inactive'
+}
 
 export const adminApi = {
   /** 获取管理员个人信息 */
@@ -34,7 +44,7 @@ export const adminApi = {
 
   /** 创建社群话题圈 */
   async createCommunityGroup(data: GroupCreateIn): Promise<GroupItemOut> {
-    return await requestJson<GroupItemOut>('/admins/community/groups', {
+    return await requestJson<GroupItemOut>('/admins/communities/groups', {
       method: 'POST',
       body: data,
     })
@@ -147,21 +157,21 @@ export const adminApi = {
     if (params?.keyword) query.set('keyword', params.keyword)
     if (params?.is_hidden !== undefined) query.set('is_hidden', String(params.is_hidden))
     const qs = query.toString()
-    return await requestJson<AdminPostListOut>(`/admins/community/posts${qs ? `?${qs}` : ''}`, {
+    return await requestJson<AdminPostListOut>(`/admins/communities/posts${qs ? `?${qs}` : ''}`, {
       method: 'GET',
     })
   },
 
   /** 审核帖子（隐藏/显示） */
   async reviewPost(id: string, is_hidden: boolean): Promise<void> {
-    await requestJson<void>(`/admins/community/posts/${id}/review?is_hidden=${is_hidden}`, {
+    await requestJson<void>(`/admins/communities/posts/${id}/review?is_hidden=${is_hidden}`, {
       method: 'PATCH',
     })
   },
 
   /** 删除帖子 */
   async deletePost(id: string): Promise<void> {
-    await requestJson<void>(`/admins/community/posts/${id}`, { method: 'DELETE' })
+    await requestJson<void>(`/admins/communities/posts/${id}`, { method: 'DELETE' })
   },
 
   /** 获取全平台评论列表 */
@@ -176,13 +186,104 @@ export const adminApi = {
     if (params?.post_id) query.set('post_id', params.post_id)
     const qs = query.toString()
     return await requestJson<AdminCommentListOut>(
-      `/admins/community/comments${qs ? `?${qs}` : ''}`,
+      `/admins/communities/comments${qs ? `?${qs}` : ''}`,
       { method: 'GET' },
     )
   },
 
   /** 删除评论 */
   async deleteComment(id: string): Promise<void> {
-    await requestJson<void>(`/admins/community/comments/${id}`, { method: 'DELETE' })
+    await requestJson<void>(`/admins/communities/comments/${id}`, { method: 'DELETE' })
+  },
+
+  // --- 评价管理 ---
+
+  /** 获取全平台评价列表 */
+  async getReviews(params?: {
+    page?: number
+    page_size?: number
+    keyword?: string
+  }): Promise<AdminReviewListOut> {
+    const query = new URLSearchParams()
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.page_size) query.set('page_size', String(params.page_size))
+    if (params?.keyword) query.set('keyword', params.keyword)
+    const qs = query.toString()
+    return await requestJson<AdminReviewListOut>(`/admins/reviews${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    })
+  },
+
+  /** 删除评价 */
+  async deleteReview(id: string): Promise<void> {
+    await requestJson<void>(`/admins/reviews/${id}`, { method: 'DELETE' })
+  },
+
+  // --- 轮播图管理 ---
+
+  /** 获取轮播图列表 */
+  async getBanners(params?: { page?: number; page_size?: number }): Promise<AdminBannerListOut> {
+    const query = new URLSearchParams()
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.page_size) query.set('page_size', String(params.page_size))
+    const qs = query.toString()
+    return await requestJson<AdminBannerListOut>(`/admins/banners${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    })
+  },
+
+  /** 创建轮播图 */
+  async createBanner(data: Omit<AdminBannerItemOut, 'id'>): Promise<AdminBannerItemOut> {
+    return await requestJson<AdminBannerItemOut>('/admins/banners', {
+      method: 'POST',
+      body: data,
+    })
+  },
+
+  /** 更新轮播图 */
+  async updateBanner(id: string, data: Partial<AdminBannerItemOut>): Promise<AdminBannerItemOut> {
+    return await requestJson<AdminBannerItemOut>(`/admins/banners/${id}`, {
+      method: 'PATCH',
+      body: data,
+    })
+  },
+
+  /** 删除轮播图 */
+  async deleteBanner(id: string): Promise<void> {
+    await requestJson<void>(`/admins/banners/${id}`, { method: 'DELETE' })
+  },
+
+  // --- 优惠券管理 ---
+
+  /** 获取优惠券列表 */
+  async getCoupons(params?: {
+    page?: number
+    page_size?: number
+    merchant_id?: string
+  }): Promise<AdminCouponListOut> {
+    const query = new URLSearchParams()
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.page_size) query.set('page_size', String(params.page_size))
+    if (params?.merchant_id) query.set('merchant_id', params.merchant_id)
+    const qs = query.toString()
+    return await requestJson<AdminCouponListOut>(`/admins/coupons${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    })
+  },
+
+  /** 创建平台优惠券 */
+  async createCoupon(data: CouponCreateIn): Promise<AdminCouponItemOut> {
+    return await requestJson<AdminCouponItemOut>('/admins/coupons', {
+      method: 'POST',
+      body: data,
+    })
+  },
+
+  /** 更新优惠券 */
+  async updateCoupon(id: string, data: AdminCouponUpdateIn): Promise<AdminCouponItemOut> {
+    return await requestJson<AdminCouponItemOut>(`/admins/coupons/${id}`, {
+      method: 'PUT',
+      body: data,
+    })
   },
 }

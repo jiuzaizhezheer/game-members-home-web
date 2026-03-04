@@ -29,3 +29,19 @@ export const MerchantUpdateSchema = z.object({
 
 /** 更新商家店铺信息请求 (从 Schema 自动推导) */
 export type MerchantUpdateIn = z.infer<typeof MerchantUpdateSchema>
+
+import type { OrderRefundOut } from '../order/types'
+
+export const OrderRefundAuditInSchema = z.object({
+  status: z.enum(['approved', 'rejected'], { message: '请选择审核结果' }),
+  merchant_reply: z.string().max(255, '备注不能超过255个字符').optional().nullable(),
+})
+
+export type OrderRefundAuditIn = z.infer<typeof OrderRefundAuditInSchema>
+
+export interface OrderRefundListOut {
+  items: OrderRefundOut[]
+  total: number
+  page: number
+  page_size: number
+}

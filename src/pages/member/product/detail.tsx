@@ -18,6 +18,8 @@ import { favoriteService } from '@/features/favorite/service'
 import { useAuth } from '@/contexts/AuthContext'
 import type { ProductPublicOut } from '@/features/product/types'
 import { getFileUrl } from '@/shared/utils/file'
+import { ReviewList } from '@/features/review/components/ReviewList'
+import { Star } from 'lucide-react'
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -353,6 +355,27 @@ export default function ProductDetailPage() {
                 <span>库存</span>
                 <span className="font-semibold text-zinc-950">{product.stock}</span>
               </div>
+
+              {/* Reviews Summary */}
+              {product.review_count !== undefined && product.review_count > 0 && (
+                <>
+                  <div className="h-2.5 w-px bg-zinc-200" />
+                  <div
+                    className="flex items-center gap-1 cursor-pointer hover:text-indigo-600 transition-colors"
+                    onClick={() => {
+                      document
+                        .getElementById('reviews-section')
+                        ?.scrollIntoView({ behavior: 'smooth' })
+                    }}
+                  >
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                    <span className="font-semibold text-zinc-950">
+                      {Number(product.rating).toFixed(1)}
+                    </span>
+                    <span>({product.review_count}条评价)</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -437,6 +460,22 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </motion.div>
+      </div>
+
+      {/* Reviews Section */}
+      <div id="reviews-section" className="mt-12">
+        <div className="border-b border-zinc-200 pb-4 mb-6">
+          <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-indigo-500" />
+            商品评价
+            <span className="text-sm font-medium text-zinc-500 ml-2">
+              (共 {product.review_count || 0} 条)
+            </span>
+          </h2>
+        </div>
+        <div className="max-w-3xl">
+          <ReviewList productId={product.id} />
+        </div>
       </div>
     </div>
   )

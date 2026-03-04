@@ -111,6 +111,20 @@ export function ShipmentModal({ isOpen, onClose, onConfirm, order }: ShipmentMod
                 )}
               </div>
 
+              {/* Sender Address */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-zinc-700">发货地址</label>
+                <input
+                  type="text"
+                  placeholder="地址即为轨迹起点，如：深圳仓库"
+                  {...register('sender_address')}
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm transition-all focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+                />
+                {errors.sender_address && (
+                  <p className="text-xs text-rose-500">{errors.sender_address.message}</p>
+                )}
+              </div>
+
               {/* Actions */}
               <div className="mt-8 flex gap-3">
                 <button

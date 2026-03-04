@@ -7,6 +7,7 @@ import { promotionApi } from '@/features/marketing/api'
 import type { PromotionOut } from '@/features/marketing/types'
 import { PROMOTION_STATUS, DISCOUNT_TYPES } from '@/features/marketing/constants'
 import { formatDate } from '@/shared/utils/date'
+import { cn } from '@/shared/utils/cn'
 
 export default function PromotionListPage() {
   const [promotions, setPromotions] = useState<PromotionOut[]>([])
@@ -86,13 +87,22 @@ export default function PromotionListPage() {
                   <h3 className="font-bold text-zinc-900">{promo.title}</h3>
                   <div className="mt-2 flex items-center gap-2">
                     <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                        promo.status === PROMOTION_STATUS.ACTIVE
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : 'bg-zinc-100 text-zinc-500'
-                      }`}
+                      className={cn(
+                        'rounded-full px-2.5 py-0.5 text-xs font-bold',
+                        promo.display_status === PROMOTION_STATUS.ACTIVE &&
+                          'bg-emerald-50 text-emerald-600',
+                        promo.display_status === PROMOTION_STATUS.PENDING &&
+                          'bg-indigo-50 text-indigo-600',
+                        promo.display_status === PROMOTION_STATUS.EXPIRED &&
+                          'bg-rose-50 text-rose-600',
+                        promo.display_status === PROMOTION_STATUS.INACTIVE &&
+                          'bg-zinc-100 text-zinc-500',
+                      )}
                     >
-                      {promo.status === PROMOTION_STATUS.ACTIVE ? '进行中' : '已结束'}
+                      {promo.display_status === PROMOTION_STATUS.ACTIVE && '进行中'}
+                      {promo.display_status === PROMOTION_STATUS.PENDING && '未开始'}
+                      {promo.display_status === PROMOTION_STATUS.EXPIRED && '已过期'}
+                      {promo.display_status === PROMOTION_STATUS.INACTIVE && '已停用'}
                     </span>
                     <span className="text-xs text-zinc-400 font-medium">
                       {promo.discount_type === DISCOUNT_TYPES.PERCENT

@@ -10,7 +10,7 @@ export const userService = {
     return await userApi.updateProfile(data)
   },
 
-  changePassword: async (data: UserChangePasswordIn) => {
-    return await userApi.changePassword(data)
-  },
+  changePassword: (data: UserChangePasswordIn) => userApi.changePassword(data),
+
+  getPointLogs: (page: number, pageSize: number) => userApi.getPointLogs(page, pageSize),
 }

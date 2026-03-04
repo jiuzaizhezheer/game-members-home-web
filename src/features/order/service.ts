@@ -1,5 +1,5 @@
 import { orderApi } from './api'
-import type { OrderCreateIn, BuyNowIn } from './types'
+import type { OrderCreateIn, BuyNowIn, OrderRefundApplyIn } from './types'
 
 export const orderService = {
   createOrder: async (data: OrderCreateIn) => {
@@ -28,5 +28,17 @@ export const orderService = {
 
   receiptOrder: async (id: string) => {
     return await orderApi.receiptOrder(id)
+  },
+
+  applyRefund: async (id: string, data: OrderRefundApplyIn) => {
+    return await orderApi.applyRefund(id, data)
+  },
+
+  getRefundDetail: async (id: string) => {
+    return await orderApi.getRefundDetail(id)
+  },
+
+  getOrderLogistics: async (id: string) => {
+    return await orderApi.getOrderLogistics(id)
   },
 }

@@ -4,7 +4,7 @@ import type { DashboardOverviewOut, ProductRankingOut, SalesTrendOut } from './t
 export const statisticsApi = {
   /** 获取仪表盘概况 */
   async getDashboardOverview(): Promise<DashboardOverviewOut> {
-    return await requestJson<DashboardOverviewOut>('/merchant/statistics/dashboard', {
+    return await requestJson<DashboardOverviewOut>('/merchants/statistics/dashboard', {
       method: 'GET',
     })
   },
@@ -15,7 +15,7 @@ export const statisticsApi = {
     searchParams.append('days', days.toString())
 
     return await requestJson<SalesTrendOut>(
-      `/merchant/statistics/sales-trend?${searchParams.toString()}`,
+      `/merchants/statistics/sales-trend?${searchParams.toString()}`,
       {
         method: 'GET',
       },
@@ -28,7 +28,7 @@ export const statisticsApi = {
     searchParams.append('limit', limit.toString())
 
     return await requestJson<ProductRankingOut>(
-      `/merchant/statistics/top-products?${searchParams.toString()}`,
+      `/merchants/statistics/top-products?${searchParams.toString()}`,
       {
         method: 'GET',
       },

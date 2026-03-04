@@ -14,8 +14,13 @@ export const merchantService = {
     return await merchantApi.update(id, payload)
   },
 
-  async getOrders(page = 1, pageSize = 10, status?: string): Promise<OrderListOut> {
-    return await merchantApi.getOrders(page, pageSize, status)
+  async getOrders(
+    page = 1,
+    pageSize = 10,
+    status?: string,
+    refundStatus?: string,
+  ): Promise<OrderListOut> {
+    return await merchantApi.getOrders(page, pageSize, status, refundStatus)
   },
 
   async shipOrder(id: string, payload: OrderShipIn): Promise<void> {

@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Package,
   Heart,
+  Ticket,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -77,6 +78,7 @@ export default function Navbar() {
 
   const NAV_LINKS = [
     { label: '商城', path: '/member/home', icon: Gamepad2 },
+    { label: '领券', path: '/member/coupons', icon: Ticket },
     { label: '社区', path: '/community', icon: MessageSquare },
   ]
 

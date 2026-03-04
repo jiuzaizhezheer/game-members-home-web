@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Package, Search, Filter, Eye, PackageSearch, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
@@ -16,7 +17,8 @@ export default function AdminProductsPage() {
 
   const [page, setPage] = useState(1)
   const pageSize = 15
-  const [keyword, setKeyword] = useState('')
+  const [searchParams] = useSearchParams()
+  const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
   const [statusFilter, setStatusFilter] = useState('')
   const debouncedKeyword = useDebounce(keyword, 600)
 

@@ -13,6 +13,8 @@ import {
   Menu,
   MessageCircle,
   FileText,
+  Image,
+  Ticket,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
@@ -32,6 +34,8 @@ const SIDEBAR_ITEMS = [
   { icon: Package, label: '商品管理', path: '/admin/products' },
   { icon: MessageCircle, label: '社群管理', path: '/admin/community' },
   { icon: FileSearch, label: '内容审核', path: '/admin/content' },
+  { icon: Image, label: '内容运营', path: '/admin/banners' },
+  { icon: Ticket, label: '优惠券管理', path: '/admin/coupons' },
   { icon: FileText, label: '操作日志', path: '/admin/logs' },
 ]
 

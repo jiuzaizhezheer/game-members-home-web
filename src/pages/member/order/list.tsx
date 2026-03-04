@@ -9,6 +9,7 @@ import {
   Truck,
   XCircle,
   ShoppingBag,
+  AlertCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { orderService } from '@/features/order/service'
@@ -17,6 +18,7 @@ import { getFileUrl } from '@/shared/utils/file'
 import { useConfirm } from '@/components/ui/confirmContext'
 
 import { PaymentModal } from '@/features/order/components/PaymentModal'
+import { ReviewModal } from '@/features/review/components/ReviewModal'
 
 const STATUS_MAP = {
   pending: { label: '待付款', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
@@ -24,6 +26,8 @@ const STATUS_MAP = {
   shipped: { label: '已发货', color: 'text-blue-600', bg: 'bg-blue-50', icon: Truck },
   completed: { label: '已完成', color: 'text-teal-600', bg: 'bg-teal-50', icon: CheckCircle2 },
   cancelled: { label: '已取消', color: 'text-zinc-400', bg: 'bg-zinc-100', icon: XCircle },
+  refunding: { label: '退款中', color: 'text-rose-600', bg: 'bg-rose-50', icon: AlertCircle },
+  refunded: { label: '已退款', color: 'text-zinc-500', bg: 'bg-zinc-100', icon: XCircle },
 }
 
 export default function OrderListPage() {
@@ -32,7 +36,29 @@ export default function OrderListPage() {
   const [total, setTotal] = useState(0)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<{ id: string; amount: number } | null>(null)
+
+  // Review Modal State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [reviewItem, setReviewItem] = useState<{
+    orderId: string
+    productId: string
+    productName: string
+    productImage?: string | null
+  } | null>(null)
+
   const confirm = useConfirm()
+
+  const handleOpenReviewModal = (
+    e: React.MouseEvent,
+    orderId: string,
+    productId: string,
+    productName: string,
+    productImage?: string | null,
+  ) => {
+    e.preventDefault()
+    setReviewItem({ orderId, productId, productName, productImage })
+    setIsReviewModalOpen(true)
+  }
 
   const handleCancel = async (e: React.MouseEvent, order: OrderOut) => {
     e.preventDefault()
@@ -160,11 +186,19 @@ export default function OrderListPage() {
                   <span className="hidden sm:inline">|</span>
                   <span>{new Date(order.created_at).toLocaleString()}</span>
                 </div>
-                <div
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${status.bg} ${status.color}`}
-                >
-                  <status.icon size={14} />
-                  {status.label}
+                <div className="flex items-center gap-2">
+                  {order.refund_status === 'rejected' && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100/50 text-amber-700">
+                      <AlertCircle size={14} />
+                      售后驳回
+                    </div>
+                  )}
+                  <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${status.bg} ${status.color}`}
+                  >
+                    <status.icon size={14} />
+                    {status.label}
+                  </div>
                 </div>
               </div>
 
@@ -192,6 +226,30 @@ export default function OrderListPage() {
                           <p className="mt-1 text-xs text-zinc-500">
                             ¥{Number(item.unit_price).toFixed(2)} × {item.quantity}
                           </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          {order.status === 'completed' && !item.is_reviewed && (
+                            <button
+                              onClick={(e) =>
+                                handleOpenReviewModal(
+                                  e,
+                                  order.id,
+                                  item.product_id,
+                                  item.product_name,
+                                  item.product_image,
+                                )
+                              }
+                              className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-indigo-600 shadow-sm ring-1 ring-inset ring-indigo-200 hover:bg-indigo-50 transition-colors"
+                            >
+                              去评价
+                            </button>
+                          )}
+                          {order.status === 'completed' && item.is_reviewed && (
+                            <div className="inline-flex items-center gap-1 rounded-full bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500 ring-1 ring-inset ring-zinc-200">
+                              <CheckCircle2 className="w-3 h-3" />
+                              已评价
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -259,6 +317,21 @@ export default function OrderListPage() {
           onSuccess={handlePaymentSuccess}
           orderId={selectedOrder.id}
           amount={selectedOrder.amount}
+        />
+      )}
+
+      {reviewItem && (
+        <ReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false)
+            setReviewItem(null)
+          }}
+          onSuccess={fetchOrders}
+          orderId={reviewItem.orderId}
+          productId={reviewItem.productId}
+          productName={reviewItem.productName}
+          productImage={reviewItem.productImage}
         />
       )}
     </div>

@@ -1,5 +1,13 @@
 import { requestJson } from '@/shared/api/http'
-import type { OrderOut, OrderCreateIn, OrderListOut, BuyNowIn } from './types'
+import type {
+  OrderOut,
+  OrderCreateIn,
+  OrderListOut,
+  BuyNowIn,
+  OrderRefundApplyIn,
+  OrderRefundOut,
+  OrderLogisticsOut,
+} from './types'
 
 export const orderApi = {
   createOrder: (data: OrderCreateIn) =>
@@ -33,4 +41,14 @@ export const orderApi = {
     requestJson<void>(`/orders/${id}/receipt`, {
       method: 'POST',
     }),
+
+  applyRefund: (id: string, data: OrderRefundApplyIn) =>
+    requestJson<OrderRefundOut>(`/orders/${id}/refund`, {
+      method: 'POST',
+      body: data,
+    }),
+
+  getRefundDetail: (id: string) => requestJson<OrderRefundOut>(`/orders/${id}/refund`, {}),
+
+  getOrderLogistics: (id: string) => requestJson<OrderLogisticsOut>(`/orders/${id}/logistics`, {}),
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Filter, PackageSearch } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { productService } from '@/features/product/service'
 import { categoryApi } from '@/features/category/api'
 import type { ProductPublicOut } from '@/features/product/types'
@@ -9,6 +9,16 @@ import type { CategoryOut } from '@/features/category/types'
 import { useDebounce } from '@/hooks/useDebounce'
 import { getFileUrl } from '@/shared/utils/file'
 import Skeleton from '@/components/ui/Skeleton'
+import { commonApi, type BannerOut } from '@/features/common/api'
+import {
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  Sparkles,
+  Ticket,
+  LayoutGrid,
+  Coins,
+} from 'lucide-react'
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -72,6 +82,26 @@ export default function HomePage() {
     fetchTrending()
   }, [])
 
+  // 轮播图状态
+  const [banners, setBanners] = useState<BannerOut[]>([])
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
+
+  useEffect(() => {
+    commonApi
+      .getBanners()
+      .then(setBanners)
+      .catch(() => {})
+  }, [])
+
+  // 自动轮播
+  useEffect(() => {
+    if (banners.length <= 1) return
+    const timer = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [banners.length])
+
   // 获取商品列表
   useEffect(() => {
     const fetchProducts = async () => {
@@ -128,9 +158,244 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 pt-2 pb-16 sm:px-6 lg:px-8">
+      {/* Hero Section: Banner + Trending Sidebar */}
+      {!keywordFromUrl && !selectedCategoryId && (
+        <div className="mb-10 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main Banner (2/3 width on desktop) */}
+          <div className="lg:col-span-8">
+            {banners.length > 0 && (
+              <div className="relative aspect-[21/9] w-full overflow-hidden rounded-3xl bg-zinc-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-black/5">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentBannerIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="relative h-full w-full"
+                  >
+                    <img
+                      src={getFileUrl(banners[currentBannerIndex].image_url)}
+                      alt={banners[currentBannerIndex].title}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-6 left-8 right-8">
+                      <motion.h3
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-xl font-bold text-white sm:text-3xl tracking-tight"
+                      >
+                        {banners[currentBannerIndex].title}
+                      </motion.h3>
+                      {banners[currentBannerIndex].link_url && (
+                        <motion.div
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.3 }}
+                          className="mt-4"
+                        >
+                          <Link
+                            to={banners[currentBannerIndex].link_url!}
+                            className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-bold text-zinc-900 transition-all hover:bg-zinc-100 hover:scale-105 active:scale-95 shadow-xl shadow-black/10"
+                          >
+                            立即查看
+                            <ChevronRight size={14} />
+                          </Link>
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Navigation Arrows */}
+                {banners.length > 1 && (
+                  <>
+                    <button
+                      onClick={() =>
+                        setCurrentBannerIndex(
+                          (prev) => (prev - 1 + banners.length) % banners.length,
+                        )
+                      }
+                      className="absolute left-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-all hover:bg-white/20 active:scale-90 border border-white/10"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button
+                      onClick={() => setCurrentBannerIndex((prev) => (prev + 1) % banners.length)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-all hover:bg-white/20 active:scale-90 border border-white/10"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+
+                    {/* Pagination Dots */}
+                    <div className="absolute bottom-4 right-8 flex gap-1.5">
+                      {banners.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentBannerIndex(i)}
+                          className={`h-1.5 rounded-full transition-all duration-300 ${i === currentBannerIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/30'}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Trending Sidebar (1/3 width on desktop) */}
+          <div className="hidden lg:block lg:col-span-4 relative">
+            <div className="absolute inset-0 rounded-3xl bg-zinc-50/50 border border-zinc-200/50 p-6 shadow-sm overflow-hidden flex flex-col">
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 h-32 w-32 rounded-full bg-indigo-500/5 blur-3xl" />
+
+              <div className="mb-4 flex items-center justify-between shrink-0">
+                <h3 className="flex items-center gap-2 text-base font-bold text-zinc-900 tracking-tight">
+                  <TrendingUp size={18} className="text-indigo-500" />
+                  人气热销榜
+                </h3>
+                <div className="flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
+                  <Sparkles size={10} />
+                  Live
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-3 overflow-hidden">
+                {loadingTrending
+                  ? Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="flex gap-3 animate-pulse">
+                        <div className="h-14 w-14 shrink-0 rounded-xl bg-zinc-200" />
+                        <div className="flex flex-1 flex-col justify-center space-y-2">
+                          <div className="h-3 w-2/3 rounded-full bg-zinc-200" />
+                          <div className="h-4 w-1/3 rounded-full bg-zinc-200" />
+                        </div>
+                      </div>
+                    ))
+                  : trendingProducts.slice(0, 3).map((product, index) => {
+                      const finalPrice = calculatePrice(product)
+                      return (
+                        <Link
+                          key={product.id}
+                          to={`/member/product/${product.id}`}
+                          className="group flex gap-3 p-1.5 -mx-1.5 rounded-2xl transition-all hover:bg-white hover:shadow-md hover:shadow-zinc-200/50"
+                        >
+                          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-zinc-100 bg-white">
+                            <img
+                              src={getFileUrl(product.image_url)}
+                              alt={product.name}
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                            <div
+                              className={`absolute top-0 left-0 flex h-5 w-5 items-center justify-center rounded-br-lg text-[10px] font-bold text-white shadow-sm ${
+                                index === 0
+                                  ? 'bg-amber-400'
+                                  : index === 1
+                                    ? 'bg-slate-300'
+                                    : 'bg-orange-700'
+                              }`}
+                            >
+                              {index + 1}
+                            </div>
+                          </div>
+                          <div className="flex flex-1 flex-col justify-center min-w-0">
+                            <h4 className="text-sm font-bold text-zinc-900 truncate group-hover:text-indigo-600 transition-colors">
+                              {product.name}
+                            </h4>
+                            <div className="mt-0.5 flex items-center justify-between">
+                              <span className="text-rose-600 font-bold text-sm leading-none">
+                                ¥{finalPrice.toFixed(2)}
+                              </span>
+                              <span className="text-[10px] text-zinc-400">
+                                热度 {product.popularity_score}
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                      )
+                    })}
+              </div>
+
+              <Link
+                to="/member/trending"
+                className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 py-2 text-xs font-bold text-white transition-all hover:bg-zinc-800 active:scale-95 shadow-lg shadow-zinc-200 shrink-0"
+              >
+                查看完整榜单
+                <ChevronRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Actions Row */}
+      {!keywordFromUrl && !selectedCategoryId && (
+        <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
+          <Link
+            to="/member/coupons"
+            className="group relative flex items-center gap-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-rose-200 hover:shadow-xl hover:shadow-rose-500/5 active:scale-95 sm:p-5"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 ring-1 ring-rose-100 transition-colors group-hover:bg-rose-500 group-hover:text-white group-hover:ring-rose-500">
+              <Ticket size={24} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-zinc-900 sm:text-base">领券中心</h3>
+              <p className="mt-0.5 text-[10px] text-zinc-500 sm:text-xs">先领券 再下单</p>
+            </div>
+            <div className="absolute top-2 right-2 rounded-full bg-rose-500 px-1.5 py-0.5 text-[8px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 uppercase tracking-tighter">
+              Hot
+            </div>
+          </Link>
+
+          <Link
+            to="/member/profile/points"
+            className="group flex items-center gap-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-amber-200 hover:shadow-xl hover:shadow-amber-500/5 active:scale-95 sm:p-5"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-500 ring-1 ring-amber-100 transition-colors group-hover:bg-amber-500 group-hover:text-white group-hover:ring-amber-500">
+              <Coins size={24} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-zinc-900 sm:text-base">积分特权</h3>
+              <p className="mt-0.5 text-[10px] text-zinc-500 sm:text-xs">积分兑换好礼</p>
+            </div>
+          </Link>
+
+          <Link
+            to="/member/trending"
+            className="group flex items-center gap-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5 active:scale-95 sm:p-5"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-500 ring-1 ring-indigo-100 transition-colors group-hover:bg-indigo-500 group-hover:text-white group-hover:ring-indigo-500">
+              <TrendingUp size={24} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-zinc-900 sm:text-base">人气榜单</h3>
+              <p className="mt-0.5 text-[10px] text-zinc-500 sm:text-xs">实时热销尖货</p>
+            </div>
+          </Link>
+
+          <button
+            onClick={() => {
+              const el = document.getElementById('category-tabs')
+              el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+            className="group flex items-center gap-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-500/5 active:scale-95 text-left sm:p-5"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500 ring-1 ring-emerald-100 transition-colors group-hover:bg-emerald-500 group-hover:text-white group-hover:ring-emerald-500">
+              <LayoutGrid size={24} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-zinc-900 sm:text-base">全部分类</h3>
+              <p className="mt-0.5 text-[10px] text-zinc-500 sm:text-xs">探索更多商品</p>
+            </div>
+          </button>
+        </div>
+      )}
       {/* Category Tabs */}
       {topCategories.length > 0 && (
-        <div className="mb-4 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+        <div
+          id="category-tabs"
+          className="mb-4 -mx-4 px-4 overflow-x-auto scrollbar-hide scroll-mt-20"
+        >
           <div className="flex items-center gap-2 pb-1">
             <button
               onClick={() => handleCategoryChange('')}
@@ -160,75 +425,60 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Trending Leaderboard (Only show when not searching/filtering by category) */}
-      {!keywordFromUrl && !selectedCategoryId && trendingProducts.length > 0 && (
-        <div className="mb-10">
-          <div className="mb-4">
-            <h2 className="flex items-center gap-2 text-xl font-bold text-zinc-900">
-              <span className="text-xl">🔥</span> 人气热销榜
+      {/* Hot Leaderboard (Horizontal Scrolling on Desktop, Grid on Mobile) */}
+      {!keywordFromUrl && !selectedCategoryId && trendingProducts.length > 3 && (
+        <div className="mb-12">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-zinc-900 tracking-tight">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-50 text-base">
+                🔥
+              </span>
+              人气热销榜
             </h2>
+            <Link
+              to="/member/home?sort_by=popularity_desc"
+              className="text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+            >
+              查看全部
+            </Link>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {loadingTrending
               ? Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-48 rounded-xl bg-zinc-100 animate-pulse" />
+                  <div key={i} className="h-48 rounded-2xl bg-zinc-100 animate-pulse" />
                 ))
-              : trendingProducts.map((product, index) => {
+              : trendingProducts.slice(3, 8).map((product, index) => {
                   const finalPrice = calculatePrice(product)
+                  const rank = index + 4
                   return (
                     <Link
                       key={product.id}
                       to={`/member/product/${product.id}`}
-                      className="group relative flex overflow-hidden rounded-xl bg-white border border-rose-100 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 hover:border-rose-300"
+                      className="group relative flex flex-col overflow-hidden rounded-2xl bg-white border border-zinc-200/80 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 hover:border-zinc-300"
                     >
-                      {/* Rank Badge */}
-                      <div
-                        className={`absolute top-0 left-0 z-10 rounded-br-xl px-3 py-1 text-xs font-bold text-white shadow-sm ${
-                          index === 0
-                            ? 'bg-linear-to-r from-amber-400 to-amber-500' // Top 1 Gold
-                            : index === 1
-                              ? 'bg-linear-to-r from-slate-300 to-slate-400' // Top 2 Silver
-                              : index === 2
-                                ? 'bg-linear-to-r from-amber-700 to-amber-800' // Top 3 Bronze
-                                : 'bg-zinc-800'
-                        }`}
-                      >
-                        TOP {index + 1}
+                      <div className="aspect-square w-full overflow-hidden bg-zinc-100 relative">
+                        <img
+                          src={getFileUrl(product.image_url)}
+                          alt={product.name}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                        <div className="absolute top-2 left-2 z-10 flex h-6 w-6 items-center justify-center rounded-lg bg-zinc-900/80 text-[10px] font-bold text-white backdrop-blur-xs">
+                          {rank}
+                        </div>
                       </div>
 
-                      <div className="flex w-full flex-col">
-                        <div className="aspect-square w-full overflow-hidden bg-zinc-100 relative">
-                          {product.image_url ? (
-                            <img
-                              src={getFileUrl(product.image_url)}
-                              alt={product.name}
-                              loading="lazy"
-                              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-zinc-300">
-                              <PackageSearch size={24} />
-                            </div>
-                          )}
-                          {/* Overlay gradient for readability */}
-                          <div className="absolute inset-x-0 bottom-0 h-12 bg-linear-to-t from-black/60 to-transparent pointer-events-none" />
-                          <div className="absolute bottom-2 left-2 right-2 text-white text-xs font-medium line-clamp-1">
-                            {product.name}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between bg-zinc-50 p-3 flex-1">
-                          <div className="flex flex-col">
-                            <span className="text-zinc-500 text-[10px]">
-                              综合热度 {product.popularity_score}
-                            </span>
-                            <span className="text-rose-600 font-bold text-sm">
-                              ¥{finalPrice.toFixed(2)}
-                            </span>
-                          </div>
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-600 shadow-xs transition-colors group-hover:bg-rose-600 group-hover:text-white">
-                            <span className="text-xs font-bold text-center">抢</span>
+                      <div className="p-4 flex flex-col flex-1">
+                        <h4 className="text-xs font-bold text-zinc-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                          {product.name}
+                        </h4>
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-rose-600 font-bold text-sm">
+                            ¥{finalPrice.toFixed(2)}
+                          </span>
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-50 text-zinc-400 transition-all group-hover:bg-rose-600 group-hover:text-white">
+                            <ChevronRight size={14} />
                           </div>
                         </div>
                       </div>

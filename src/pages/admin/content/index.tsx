@@ -10,15 +10,20 @@ import {
   MessageSquareOff,
   CheckSquare,
   Square,
+  MessageSquareQuote,
+  Star,
+  Package,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { adminApi } from '@/features/admin/api'
-import type { AdminPostItem, AdminCommentItem } from '@/features/admin/types'
+import type { AdminPostItem, AdminCommentItem, AdminReviewItemOut } from '@/features/admin/types'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useConfirm } from '@/components/ui/confirmContext'
+import { getFileUrl } from '@/shared/utils/file'
 
-type ContentTab = 'posts' | 'comments'
+type ContentTab = 'posts' | 'comments' | 'reviews'
 
 export default function AdminContentPage() {
   const [activeTab, setActiveTab] = useState<ContentTab>('posts')
@@ -44,6 +49,15 @@ export default function AdminContentPage() {
   const [commentsPage, setCommentsPage] = useState(1)
   const postsPageSize = 15
   const commentsPageSize = 20
+
+  // Reviews state
+  const [reviews, setReviews] = useState<AdminReviewItemOut[]>([])
+  const [reviewsTotal, setReviewsTotal] = useState(0)
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewsPage, setReviewsPage] = useState(1)
+  const [reviewKeyword, setReviewKeyword] = useState('')
+  const debouncedReviewKeyword = useDebounce(reviewKeyword, 600)
+  const reviewsPageSize = 15
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -77,12 +91,32 @@ export default function AdminContentPage() {
     }
   }, [commentsPage])
 
+  const fetchReviews = useCallback(async () => {
+    try {
+      setReviewsLoading(true)
+      const res = await adminApi.getReviews({
+        page: reviewsPage,
+        page_size: reviewsPageSize,
+        keyword: debouncedReviewKeyword || undefined,
+      })
+      setReviews(res.items)
+      setReviewsTotal(res.total)
+    } catch {
+      toast.error('获取评价列表失败')
+    } finally {
+      setReviewsLoading(false)
+    }
+  }, [reviewsPage, debouncedReviewKeyword])
+
   useEffect(() => {
     if (activeTab === 'posts') fetchPosts()
   }, [activeTab, fetchPosts])
   useEffect(() => {
     if (activeTab === 'comments') fetchComments()
   }, [activeTab, fetchComments])
+  useEffect(() => {
+    if (activeTab === 'reviews') fetchReviews()
+  }, [activeTab, fetchReviews])
 
   const handleReviewPost = async (post: AdminPostItem) => {
     const newHidden = !post.is_hidden
@@ -132,6 +166,27 @@ export default function AdminContentPage() {
       toast.success('评论已删除')
       setComments((prev) => prev.filter((c) => c.id !== comment.id))
       setCommentsTotal((t) => t - 1)
+    } catch {
+      toast.error('删除失败')
+    }
+  }
+
+  const handleDeleteReview = async (review: AdminReviewItemOut) => {
+    if (
+      !(await confirm({
+        title: '删除评价',
+        description: `确定要删除用户 "${review.user.username}" 的评价吗？删除后对应商品的评分和评价数将自动更新。`,
+        confirmText: '删除',
+        cancelText: '取消',
+        variant: 'danger',
+      }))
+    )
+      return
+    try {
+      await adminApi.deleteReview(review.id)
+      toast.success('评价已删除')
+      setReviews((prev) => prev.filter((r) => r.id !== review.id))
+      setReviewsTotal((t) => t - 1)
     } catch {
       toast.error('删除失败')
     }
@@ -242,6 +297,13 @@ export default function AdminContentPage() {
         >
           <MessageSquareOff size={14} />
           评论管理
+        </button>
+        <button
+          onClick={() => setActiveTab('reviews')}
+          className={`flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-medium transition-all ${activeTab === 'reviews' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+        >
+          <MessageSquareQuote size={14} />
+          评价管理
         </button>
       </div>
 
@@ -533,6 +595,170 @@ export default function AdminContentPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Reviews Panel */}
+      {activeTab === 'reviews' && (
+        <div className="space-y-4">
+          {/* Review Filters */}
+          <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="搜索评价内容..."
+                value={reviewKeyword}
+                onChange={(e) => {
+                  setReviewKeyword(e.target.value)
+                  setReviewsPage(1)
+                }}
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-2.5 pl-10 pr-4 text-sm outline-none transition-all placeholder:text-zinc-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+              />
+            </div>
+          </div>
+
+          {/* Reviews Table */}
+          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead className="bg-zinc-50/80 text-zinc-500">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">评分</th>
+                    <th className="px-6 py-4 font-medium">商品信息</th>
+                    <th className="px-6 py-4 font-medium">评价内容</th>
+                    <th className="px-6 py-4 font-medium">用户</th>
+                    <th className="px-6 py-4 font-medium">发布时间</th>
+                    <th className="px-6 py-4 text-right font-medium">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {reviewsLoading ? (
+                    <tr>
+                      <td colSpan={5} className="py-20 text-center">
+                        <div className="flex flex-col items-center gap-3 text-zinc-400">
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                          <span>加载中...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : reviews.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-20 text-center text-zinc-400">
+                        暂无评价数据
+                      </td>
+                    </tr>
+                  ) : (
+                    reviews.map((review) => (
+                      <motion.tr
+                        key={review.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="group transition-colors hover:bg-zinc-50/70"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-0.5 text-amber-400">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                size={12}
+                                fill={i < review.rating ? 'currentColor' : 'none'}
+                                className={i < review.rating ? 'text-amber-400' : 'text-zinc-200'}
+                              />
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Link
+                            to={`/admin/products?keyword=${encodeURIComponent(review.product_name || '')}`}
+                            className="flex items-center gap-2 transition-colors hover:text-indigo-600"
+                          >
+                            {review.product_image ? (
+                              <img
+                                src={getFileUrl(review.product_image)}
+                                alt=""
+                                className="h-8 w-8 rounded object-cover border border-zinc-100"
+                              />
+                            ) : (
+                              <div className="flex h-8 w-8 items-center justify-center rounded bg-zinc-100">
+                                <Package size={14} className="text-zinc-400" />
+                              </div>
+                            )}
+                            <span className="max-w-[120px] truncate text-xs font-medium">
+                              {review.product_name || '未知商品'}
+                            </span>
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="line-clamp-2 text-zinc-700">{review.content}</p>
+                          {review.images.length > 0 && (
+                            <div className="mt-2 flex gap-1">
+                              {review.images.slice(0, 3).map((img, idx) => (
+                                <div
+                                  key={idx}
+                                  className="h-8 w-8 rounded bg-zinc-100 overflow-hidden"
+                                >
+                                  <img src={img} alt="" className="h-full w-full object-cover" />
+                                </div>
+                              ))}
+                              {review.images.length > 3 && (
+                                <div className="flex h-8 w-8 items-center justify-center rounded bg-zinc-100 text-[10px] text-zinc-400">
+                                  +{review.images.length - 3}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-zinc-900">
+                              {review.user.username}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-zinc-500">
+                          {new Date(review.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-right text-zinc-500">
+                          <button
+                            onClick={() => handleDeleteReview(review)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-500 ml-auto"
+                            title="删除评价"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </td>
+                      </motion.tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {reviewsTotal > 0 && (
+              <div className="flex items-center justify-between border-t border-zinc-100 bg-white px-6 py-4">
+                <div className="text-sm text-zinc-500">
+                  第 {reviewsPage} / {Math.ceil(reviewsTotal / reviewsPageSize)} 页，共{' '}
+                  {reviewsTotal} 条
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    disabled={reviewsPage === 1}
+                    onClick={() => setReviewsPage((p) => p - 1)}
+                    className="rounded-lg border border-zinc-200 px-3 py-1 text-sm text-zinc-600 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    上一页
+                  </button>
+                  <button
+                    disabled={reviewsPage * reviewsPageSize >= reviewsTotal}
+                    onClick={() => setReviewsPage((p) => p + 1)}
+                    className="rounded-lg border border-zinc-200 px-3 py-1 text-sm text-zinc-600 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    下一页
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

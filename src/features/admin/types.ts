@@ -131,3 +131,67 @@ export type AdminLogListOut = {
   page: number
   page_size: number
 }
+// --- 评价管理 ---
+export type AdminReviewItemOut = {
+  id: string
+  product_id: string
+  order_id: string
+  user: {
+    id: string
+    username: string
+    avatar: string | null
+  }
+  rating: number
+  content: string
+  images: string[]
+  merchant_reply: string | null
+  reply_at: string | null
+  product_name: string | null
+  product_image: string | null
+  created_at: string
+}
+
+export type AdminReviewListOut = {
+  items: AdminReviewItemOut[]
+  total: number
+  page: number
+  page_size: number
+}
+
+// --- 轮播图管理 ---
+export type AdminBannerItemOut = {
+  id: string
+  title: string
+  image_url: string
+  link_url: string | null
+  sort_order: number
+  is_active: boolean
+}
+
+export type AdminBannerListOut = {
+  items: AdminBannerItemOut[]
+  total: number
+}
+
+// --- 优惠券管理 ---
+export type AdminCouponItemOut = {
+  id: string
+  merchant_id: string | null
+  title: string
+  description: string | null
+  discount_type: 'percent' | 'fixed'
+  discount_value: number
+  min_spend: number
+  total_quantity: number
+  issued_count: number
+  start_at: string
+  end_at: string
+  status: 'active' | 'inactive'
+  created_at: string
+  updated_at: string
+}
+
+export type AdminCouponListOut = {
+  items: AdminCouponItemOut[]
+  total: number
+}
