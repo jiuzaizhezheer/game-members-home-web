@@ -1,6 +1,8 @@
 export const PROMOTION_STATUS = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
+  PENDING: 'pending',
+  EXPIRED: 'expired',
 } as const
 
 export const DISCOUNT_TYPES = {

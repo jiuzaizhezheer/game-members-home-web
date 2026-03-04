@@ -15,8 +15,12 @@ import {
   MapPin,
   KeyRound,
   MessageSquare,
+  Coins,
+  ChevronRight,
+  Ticket,
 } from 'lucide-react'
 import { userService } from '@/features/user/service'
+import PointBadge from '@/components/ui/PointBadges'
 import {
   UserProfileUpdateInSchema,
   type UserOut,
@@ -173,11 +177,66 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
-              <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-                <CheckCircle2 className="h-3 w-3" />
-                已激活
+              <div className="mt-3 flex flex-col items-center gap-2">
+                <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                  <CheckCircle2 className="h-3 w-3" />
+                  已激活
+                </div>
+                {profile?.level && <PointBadge level={profile.level} size="sm" />}
               </div>
             </div>
+
+            <div className="mt-8 grid grid-cols-2 gap-4 border-t border-zinc-100 pt-6">
+              <div
+                className="rounded-xl bg-indigo-50/50 p-3 text-center transition-all hover:bg-indigo-100/50 cursor-pointer group"
+                onClick={() => navigate('/member/profile/points')}
+              >
+                <div className="flex justify-center mb-1">
+                  <Coins className="w-5 h-5 text-indigo-600 group-hover:scale-110 transition-transform" />
+                </div>
+                <p className="text-[10px] text-zinc-500 font-medium">账户积分</p>
+                <p className="text-lg font-bold text-indigo-700">{profile?.points || 0}</p>
+              </div>
+              <div className="rounded-xl bg-amber-50/50 p-3 text-center">
+                <div className="flex justify-center mb-1">
+                  <Shield className="w-5 h-5 text-amber-600" />
+                </div>
+                <p className="text-[10px] text-zinc-500 font-medium">成长等级</p>
+                <p className="text-sm font-bold text-amber-700 uppercase">
+                  {profile?.level || 'BRONZE'}
+                </p>
+              </div>
+            </div>
+
+            {profile?.next_level_threshold && (
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                    晋级进度
+                  </p>
+                  <p className="text-[10px] font-bold text-amber-700">
+                    还需 ¥
+                    {(Number(profile.next_level_threshold) - Number(profile.total_spent)).toFixed(
+                      2,
+                    )}
+                  </p>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{
+                      width: `${Math.min(100, (Number(profile.total_spent) / Number(profile.next_level_threshold)) * 100)}%`,
+                    }}
+                    className="h-full bg-amber-400"
+                  />
+                </div>
+                <p className="text-[10px] text-zinc-400 text-center">
+                  继续消费以解锁{' '}
+                  <span className="font-semibold text-zinc-600">{profile.next_level_name}</span>{' '}
+                  特权
+                </p>
+              </div>
+            )}
 
             <div className="mt-8 space-y-4 border-t border-zinc-100 pt-6">
               <div className="flex items-center gap-3 text-sm">
@@ -310,6 +369,46 @@ export default function ProfilePage() {
               className="text-sm font-semibold text-purple-600 hover:text-purple-700"
             >
               查看我的帖子
+            </button>
+          </section>
+
+          {/* Points History management */}
+          <section className="group flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
+            <div className="flex items-center gap-4">
+              <div className="rounded-xl bg-orange-50 p-3 text-orange-600 transition-colors group-hover:bg-orange-100">
+                <Coins className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-zinc-900">积分明细</h3>
+                <p className="text-sm text-zinc-500">查看您的积分获取和使用记录</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/member/profile/points')}
+              className="inline-flex items-center gap-1 text-sm font-semibold text-orange-600 hover:text-orange-700"
+            >
+              查看明细
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </section>
+
+          {/* Coupons Management */}
+          <section className="group flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
+            <div className="flex items-center gap-4">
+              <div className="rounded-xl bg-rose-50 p-3 text-rose-600 transition-colors group-hover:bg-rose-100">
+                <Ticket className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-zinc-900">我的优惠券</h3>
+                <p className="text-sm text-zinc-500">管理您领取的优惠券，下单更优惠</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/member/profile/coupons')}
+              className="inline-flex items-center gap-1 text-sm font-semibold text-rose-600 hover:text-rose-700"
+            >
+              查看优惠券
+              <ChevronRight className="w-4 h-4" />
             </button>
           </section>
 

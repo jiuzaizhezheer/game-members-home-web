@@ -11,8 +11,17 @@ import type {
   AdminLogListOut,
   DashboardStats,
   AdminReviewListOut,
+  AdminBannerItemOut,
+  AdminBannerListOut,
+  AdminCouponItemOut,
+  AdminCouponListOut,
 } from './types'
 import type { GroupCreateIn, GroupItemOut } from '@/features/community/types'
+import type { CouponCreateIn } from '@/features/marketing/types'
+
+type AdminCouponUpdateIn = Partial<CouponCreateIn> & {
+  status?: 'active' | 'inactive'
+}
 
 export const adminApi = {
   /** 获取管理员个人信息 */
@@ -208,5 +217,73 @@ export const adminApi = {
   /** 删除评价 */
   async deleteReview(id: string): Promise<void> {
     await requestJson<void>(`/admins/reviews/${id}`, { method: 'DELETE' })
+  },
+
+  // --- 轮播图管理 ---
+
+  /** 获取轮播图列表 */
+  async getBanners(params?: { page?: number; page_size?: number }): Promise<AdminBannerListOut> {
+    const query = new URLSearchParams()
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.page_size) query.set('page_size', String(params.page_size))
+    const qs = query.toString()
+    return await requestJson<AdminBannerListOut>(`/admins/banners${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    })
+  },
+
+  /** 创建轮播图 */
+  async createBanner(data: Omit<AdminBannerItemOut, 'id'>): Promise<AdminBannerItemOut> {
+    return await requestJson<AdminBannerItemOut>('/admins/banners', {
+      method: 'POST',
+      body: data,
+    })
+  },
+
+  /** 更新轮播图 */
+  async updateBanner(id: string, data: Partial<AdminBannerItemOut>): Promise<AdminBannerItemOut> {
+    return await requestJson<AdminBannerItemOut>(`/admins/banners/${id}`, {
+      method: 'PATCH',
+      body: data,
+    })
+  },
+
+  /** 删除轮播图 */
+  async deleteBanner(id: string): Promise<void> {
+    await requestJson<void>(`/admins/banners/${id}`, { method: 'DELETE' })
+  },
+
+  // --- 优惠券管理 ---
+
+  /** 获取优惠券列表 */
+  async getCoupons(params?: {
+    page?: number
+    page_size?: number
+    merchant_id?: string
+  }): Promise<AdminCouponListOut> {
+    const query = new URLSearchParams()
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.page_size) query.set('page_size', String(params.page_size))
+    if (params?.merchant_id) query.set('merchant_id', params.merchant_id)
+    const qs = query.toString()
+    return await requestJson<AdminCouponListOut>(`/admins/coupons${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    })
+  },
+
+  /** 创建平台优惠券 */
+  async createCoupon(data: CouponCreateIn): Promise<AdminCouponItemOut> {
+    return await requestJson<AdminCouponItemOut>('/admins/coupons', {
+      method: 'POST',
+      body: data,
+    })
+  },
+
+  /** 更新优惠券 */
+  async updateCoupon(id: string, data: AdminCouponUpdateIn): Promise<AdminCouponItemOut> {
+    return await requestJson<AdminCouponItemOut>(`/admins/coupons/${id}`, {
+      method: 'PUT',
+      body: data,
+    })
   },
 }

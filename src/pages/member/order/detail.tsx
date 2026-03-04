@@ -11,9 +11,10 @@ import {
   Copy,
   CheckCircle2,
   AlertCircle,
+  Loader2,
 } from 'lucide-react'
 import { orderService } from '@/features/order/service'
-import type { OrderOut, OrderRefundOut } from '@/features/order/types'
+import type { OrderOut, OrderRefundOut, OrderLogisticsOut } from '@/features/order/types'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { getFileUrl } from '@/shared/utils/file'
@@ -31,6 +32,8 @@ export default function OrderDetailPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false)
   const [refundDetail, setRefundDetail] = useState<OrderRefundOut | null>(null)
+  const [logistics, setLogistics] = useState<OrderLogisticsOut | null>(null)
+  const [logisticsLoading, setLogisticsLoading] = useState(false)
 
   // Review Modal State
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
@@ -57,6 +60,19 @@ export default function OrderDetailPage() {
           setRefundDetail(refund)
         } catch (e) {
           console.error('Failed to fetch refund details', e)
+        }
+      }
+
+      // Fetch logistics if shipped or completed
+      if (['shipped', 'completed'].includes(data.status)) {
+        try {
+          setLogisticsLoading(true)
+          const logisticsData = await orderService.getOrderLogistics(orderId)
+          setLogistics(logisticsData)
+        } catch (e) {
+          console.error('Failed to fetch logistics', e)
+        } finally {
+          setLogisticsLoading(false)
         }
       }
     } catch (error) {
@@ -346,17 +362,84 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Logistics Mockup - Order timeline */}
+          {/* Logistics Timeline */}
           {order.status !== 'cancelled' && order.status !== 'pending' && (
             <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
               <div className="border-b border-zinc-100 bg-zinc-50/50 px-6 py-4">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-indigo-500" />
-                  <h2 className="font-semibold text-zinc-900">订单状态流转</h2>
+                  <Truck className="w-5 h-5 text-indigo-500" />
+                  <h2 className="font-semibold text-zinc-900">物流轨迹</h2>
                 </div>
               </div>
               <div className="p-6">
-                <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-indigo-500 before:via-indigo-300 before:to-zinc-100">
+                {logisticsLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="h-6 w-6 animate-spin text-zinc-300" />
+                  </div>
+                ) : logistics && logistics.items.length > 0 ? (
+                  <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-zinc-100">
+                    {logistics.items.map((item, idx) => (
+                      <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        key={item.id}
+                        className="relative flex items-start gap-6"
+                      >
+                        <div
+                          className={`absolute left-0 flex h-10 w-10 items-center justify-center rounded-full shadow-md ${
+                            idx === 0
+                              ? 'bg-indigo-600 text-white shadow-indigo-200 ring-4 ring-indigo-50'
+                              : 'bg-white text-zinc-400 border border-zinc-200 shadow-sm'
+                          }`}
+                        >
+                          {idx === 0 ? (
+                            <Truck size={18} />
+                          ) : (
+                            <div className="h-2 w-2 rounded-full bg-current" />
+                          )}
+                        </div>
+                        <div className="ml-14 flex-1 pb-2">
+                          <p
+                            className={`text-sm font-bold ${idx === 0 ? 'text-zinc-900' : 'text-zinc-500'}`}
+                          >
+                            {item.status_message}
+                          </p>
+                          {item.location && (
+                            <p className="mt-1 text-xs text-zinc-400">
+                              <MapPin size={10} className="inline mr-1" />
+                              {item.location}
+                            </p>
+                          )}
+                          <p className="mt-1.5 text-[10px] font-mono text-zinc-400">
+                            {new Date(item.log_time).toLocaleString()}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 text-zinc-400">
+                    <Truck size={32} className="mb-2 opacity-20" />
+                    <p className="text-sm">暂无详细物流轨迹</p>
+                    <p className="text-[10px]">包裹正在揽收或等待同步中...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Order Status History */}
+          {order.status !== 'cancelled' && order.status !== 'pending' && (
+            <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white/50 shadow-sm opacity-80 scale-95 origin-top transition-all hover:opacity-100 hover:scale-100">
+              <div className="border-b border-zinc-100 bg-zinc-50/50 px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-zinc-400" />
+                  <h2 className="font-semibold text-zinc-500">订单关键节点</h2>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="relative space-y-6 before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-zinc-100">
                   {/* Refund events at the top */}
                   {order.status === 'refunded' && (
                     <div className="relative flex items-center gap-6">

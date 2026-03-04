@@ -24,7 +24,7 @@ const SIDEBAR_ITEMS = [
   { icon: MessageSquare, label: '评价管理', path: '/merchant/reviews' },
   { icon: Package, label: '商品管理', path: '/merchant/product/list' },
   { icon: Users, label: '社区管理', path: '/merchant/community' },
-  { icon: TicketPercent, label: '营销中心', path: '/merchant/marketing/promotions' },
+  { icon: TicketPercent, label: '限时促销', path: '/merchant/marketing/promotions' },
   { icon: UserCircle, label: '个人中心', path: '/merchant/account' },
   { icon: Store, label: '店铺设置', path: '/merchant/settings' },
 ]

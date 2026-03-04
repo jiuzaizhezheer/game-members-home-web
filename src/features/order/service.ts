@@ -37,4 +37,8 @@ export const orderService = {
   getRefundDetail: async (id: string) => {
     return await orderApi.getRefundDetail(id)
   },
+
+  getOrderLogistics: async (id: string) => {
+    return await orderApi.getOrderLogistics(id)
+  },
 }

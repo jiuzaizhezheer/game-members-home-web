@@ -6,6 +6,7 @@ import type {
   BuyNowIn,
   OrderRefundApplyIn,
   OrderRefundOut,
+  OrderLogisticsOut,
 } from './types'
 
 export const orderApi = {
@@ -48,4 +49,6 @@ export const orderApi = {
     }),
 
   getRefundDetail: (id: string) => requestJson<OrderRefundOut>(`/orders/${id}/refund`, {}),
+
+  getOrderLogistics: (id: string) => requestJson<OrderLogisticsOut>(`/orders/${id}/logistics`, {}),
 }

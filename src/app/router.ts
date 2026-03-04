@@ -27,6 +27,10 @@ const FavoritesPage = lazy(() => import('@/pages/member/favorites'))
 const MessageListPage = lazy(() => import('@/pages/member/message/list'))
 const ChatPage = lazy(() => import('@/pages/member/message/chat'))
 const MyPostsPage = lazy(() => import('@/pages/member/profile/MyPosts'))
+const TrendingPage = lazy(() => import('@/pages/member/trending'))
+const PointsHistoryPage = lazy(() => import('@/pages/member/profile/PointsHistoryPage'))
+const CouponCenterPage = lazy(() => import('@/pages/member/coupon/CouponCenterPage'))
+const MyCouponsPage = lazy(() => import('@/pages/member/profile/MyCouponsPage'))
 
 // Community
 const GroupListPage = lazy(() => import('@/pages/community/groups/index'))
@@ -57,6 +61,10 @@ const AdminMerchantsPage = lazy(() => import('@/pages/admin/merchants'))
 const AdminProductsPage = lazy(() => import('@/pages/admin/products'))
 const AdminContentPage = lazy(() => import('@/pages/admin/content'))
 const AdminLogsPage = lazy(() => import('@/pages/admin/logs'))
+const AdminBannersPage = lazy(() => import('@/pages/admin/content/AdminBannersPage'))
+const AdminCouponListPage = lazy(
+  () => import('@/pages/admin/marketing/coupons/AdminCouponListPage'),
+)
 
 // ─── Helper: wrap a lazy element in Suspense (null fallback - layout handles UI) ─
 const s = (element: React.ReactNode) => createElement(Suspense, { fallback: null }, element)
@@ -86,9 +94,13 @@ export const router = createBrowserRouter([
       { path: 'profile', element: s(createElement(ProfilePage)) },
       { path: 'profile/addresses', element: s(createElement(AddressListPage)) },
       { path: 'profile/posts', element: s(createElement(MyPostsPage)) },
+      { path: 'profile/points', element: s(createElement(PointsHistoryPage)) },
       { path: 'favorites', element: s(createElement(FavoritesPage)) },
       { path: 'messages', element: s(createElement(MessageListPage)) },
       { path: 'messages/:partnerUserId', element: s(createElement(ChatPage)) },
+      { path: 'trending', element: s(createElement(TrendingPage)) },
+      { path: 'coupons', element: s(createElement(CouponCenterPage)) },
+      { path: 'profile/coupons', element: s(createElement(MyCouponsPage)) },
     ],
   },
 
@@ -152,7 +164,9 @@ export const router = createBrowserRouter([
       { path: 'merchants', element: s(createElement(AdminMerchantsPage)) },
       { path: 'products', element: s(createElement(AdminProductsPage)) },
       { path: 'content', element: s(createElement(AdminContentPage)) },
+      { path: 'banners', element: s(createElement(AdminBannersPage)) },
       { path: 'logs', element: s(createElement(AdminLogsPage)) },
+      { path: 'coupons', element: s(createElement(AdminCouponListPage)) },
     ],
   },
 ])

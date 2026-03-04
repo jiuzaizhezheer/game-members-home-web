@@ -1,5 +1,5 @@
 import { requestJson } from '@/shared/api/http'
-import type { UserChangePasswordIn, UserOut, UserProfileUpdateIn } from './types'
+import type { PointLogListOut, UserChangePasswordIn, UserOut, UserProfileUpdateIn } from './types'
 
 export const userApi = {
   getMe: () => requestJson<UserOut>('/users/me', { method: 'GET' }),
@@ -14,5 +14,10 @@ export const userApi = {
     requestJson<void>('/users/me/password', {
       method: 'PUT',
       body: data,
+    }),
+
+  getPointLogs: (page: number = 1, pageSize: number = 10) =>
+    requestJson<PointLogListOut>(`/users/me/points?page=${page}&page_size=${pageSize}`, {
+      method: 'GET',
     }),
 }
