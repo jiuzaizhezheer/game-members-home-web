@@ -296,7 +296,7 @@ export default function OrderListPage() {
                         </button>
                       )}
                       <Link
-                        to={`/member/order/${order.id}`}
+                        to={`/member/orders/${order.id}`}
                         className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
                       >
                         查看详情

@@ -31,6 +31,7 @@ const TrendingPage = lazy(() => import('@/pages/member/trending'))
 const PointsHistoryPage = lazy(() => import('@/pages/member/profile/PointsHistoryPage'))
 const CouponCenterPage = lazy(() => import('@/pages/member/coupon/CouponCenterPage'))
 const MyCouponsPage = lazy(() => import('@/pages/member/profile/MyCouponsPage'))
+const NotificationsPage = lazy(() => import('@/pages/member/notifications/NotificationsPage'))
 
 // Community
 const GroupListPage = lazy(() => import('@/pages/community/groups/index'))
@@ -90,6 +91,7 @@ export const router = createBrowserRouter([
       { path: 'cart', element: s(createElement(CartPage)) },
       { path: 'checkout', element: s(createElement(CheckoutPage)) },
       { path: 'orders', element: s(createElement(OrderListPage)) },
+      { path: 'orders/:id', element: s(createElement(OrderDetailPage)) },
       { path: 'order/:id', element: s(createElement(OrderDetailPage)) },
       { path: 'profile', element: s(createElement(ProfilePage)) },
       { path: 'profile/addresses', element: s(createElement(AddressListPage)) },
@@ -101,6 +103,8 @@ export const router = createBrowserRouter([
       { path: 'trending', element: s(createElement(TrendingPage)) },
       { path: 'coupons', element: s(createElement(CouponCenterPage)) },
       { path: 'profile/coupons', element: s(createElement(MyCouponsPage)) },
+      { path: 'points', element: s(createElement(PointsHistoryPage)) },
+      { path: 'notifications', element: s(createElement(NotificationsPage)) },
     ],
   },
 

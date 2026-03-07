@@ -69,6 +69,8 @@ async function refreshAccessToken(): Promise<string> {
 export type RequestJsonOptions = {
   /** HTTP 请求方法，默认为 'GET' */
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  /** URL params (query string) */
+  params?: Record<string, string | number | boolean | undefined | null>
   /** 请求体数据，会自动序列化为 JSON */
   body?: unknown
   /** 是否携带认证令牌，默认为 true */
@@ -95,7 +97,22 @@ export type RequestJsonOptions = {
  */
 export async function requestJson<T>(path: string, options: RequestJsonOptions): Promise<T> {
   // 拼接完整 URL
-  const url = path.startsWith('http') ? path : `${baseUrl}${path}`
+  let finalPath = path
+
+  if (options.params) {
+    const searchParams = new URLSearchParams()
+    Object.entries(options.params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, String(value))
+      }
+    })
+    const queryString = searchParams.toString()
+    if (queryString) {
+      finalPath = `${path}${path.includes('?') ? '&' : '?'}${queryString}`
+    }
+  }
+
+  const url = finalPath.startsWith('http') ? finalPath : `${baseUrl}${finalPath}`
 
   // 初始化请求头，默认接受 JSON 响应
   const headers: Record<string, string> = {
