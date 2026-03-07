@@ -16,8 +16,10 @@ export default defineConfig({
     proxy: {
       // 统一使用 /api 前缀
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
+        ws: true,
+        timeout: 60000,
         // rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },

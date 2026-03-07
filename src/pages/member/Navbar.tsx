@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   Search,
@@ -11,13 +11,17 @@ import {
   Package,
   Heart,
   Ticket,
+  Bell,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cartService } from '@/features/cart/service'
 import { messageService } from '@/features/message/service'
+import { notificationApi } from '@/features/notification/api'
 import { getFileUrl } from '@/shared/utils/file'
 import { useConfirm } from '@/components/ui/confirmContext'
+import { useNotificationSocket } from '@/hooks/useNotificationSocket'
+import { toast } from 'sonner'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -37,8 +41,29 @@ export default function Navbar() {
   }
 
   const [cartCount, setCartCount] = useState(0)
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const confirm = useConfirm()
+
+  const requestUnreadCounts = useCallback(async () => {
+    if (!isAuthenticated) return null
+    const [msgCount, notifCount] = await Promise.all([
+      messageService.getUnreadCount(),
+      notificationApi.getUnreadCount(),
+    ])
+    return { msgCount, notifCount }
+  }, [isAuthenticated])
+
+  const applyUnreadCounts = useCallback(async () => {
+    try {
+      const data = await requestUnreadCounts()
+      if (!data) return
+      setUnreadMessageCount(data.msgCount)
+      setUnreadNotificationCount(data.notifCount.count)
+    } catch (e) {
+      console.error('Failed to fetch unread counts', e)
+    }
+  }, [requestUnreadCounts])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -46,24 +71,46 @@ export default function Navbar() {
         .getMyCart()
         .then((cart) => setCartCount(cart.total_quantity))
         .catch(() => setCartCount(0))
-      messageService
-        .getUnreadCount()
-        .then(setUnreadCount)
-        .catch(() => setUnreadCount(0))
-    }
-  }, [isAuthenticated, location.pathname]) // Refresh on path change to keep it somewhat updated
 
-  // 轮询未读消息数（15 秒）
+      requestUnreadCounts()
+        .then((data) => {
+          if (!data) return
+          setUnreadMessageCount(data.msgCount)
+          setUnreadNotificationCount(data.notifCount.count)
+        })
+        .catch((e) => {
+          console.error('Failed to fetch unread counts', e)
+        })
+    }
+  }, [isAuthenticated, location.pathname, requestUnreadCounts]) // Refresh on path change to keep it somewhat updated
+
+  // WebSocket 实时通知
+  useNotificationSocket(user?.id, (newNotif) => {
+    // 收到新消息时：
+    // 1. 立即更新未读数
+    setUnreadNotificationCount((prev) => prev + 1)
+    const notificationLink = newNotif.link ?? undefined
+    // 2. 弹出 Toast 提醒
+    toast.info(`新通知: ${newNotif.title}`, {
+      description: newNotif.content,
+      action: notificationLink
+        ? {
+            label: '去查看',
+            onClick: () => navigate(notificationLink),
+          }
+        : undefined,
+    })
+  })
+
+  // 轮询未读“私信”数（15 秒）- 暂时保留私信轮询，直到私信也改造为 WS
   useEffect(() => {
     if (!isAuthenticated) return
     const timer = setInterval(() => {
-      messageService
-        .getUnreadCount()
-        .then(setUnreadCount)
-        .catch(() => {})
+      // 只请求私信数，或者全部请求一遍以保底
+      void applyUnreadCounts()
     }, 15_000)
     return () => clearInterval(timer)
-  }, [isAuthenticated])
+  }, [isAuthenticated, applyUnreadCounts])
 
   // 未登录时购物车数量始终为 0
   const displayCartCount = isAuthenticated ? cartCount : 0
@@ -172,10 +219,22 @@ export default function Navbar() {
                     className={`relative flex items-center gap-1 text-sm font-medium transition-colors ${location.pathname.startsWith('/member/messages') ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
                   >
                     <MessageSquare size={15} />
-                    消息
-                    {unreadCount > 0 && (
+                    互动
+                    {unreadMessageCount > 0 && (
                       <span className="absolute -right-3 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-                        {unreadCount > 99 ? '99+' : unreadCount}
+                        {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                      </span>
+                    )}
+                  </Link>
+                  <Link
+                    to="/member/notifications"
+                    className={`relative flex items-center gap-1 text-sm font-medium transition-colors ${location.pathname.startsWith('/member/notifications') ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
+                  >
+                    <Bell size={15} />
+                    通知
+                    {unreadNotificationCount > 0 && (
+                      <span className="absolute -right-3 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                        {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
                       </span>
                     )}
                   </Link>
