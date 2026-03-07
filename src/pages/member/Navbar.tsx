@@ -85,22 +85,24 @@ export default function Navbar() {
   }, [isAuthenticated, location.pathname, requestUnreadCounts]) // Refresh on path change to keep it somewhat updated
 
   // WebSocket 实时通知
-  useNotificationSocket(user?.id, (newNotif) => {
-    // 收到新消息时：
-    // 1. 立即更新未读数
-    setUnreadNotificationCount((prev) => prev + 1)
-    const notificationLink = newNotif.link ?? undefined
-    // 2. 弹出 Toast 提醒
-    toast.info(`新通知: ${newNotif.title}`, {
-      description: newNotif.content,
-      action: notificationLink
-        ? {
-            label: '去查看',
-            onClick: () => navigate(notificationLink),
-          }
-        : undefined,
-    })
-  })
+  const handleNewNotification = useCallback(
+    (newNotif: { title: string; content: string; link?: string | null }) => {
+      setUnreadNotificationCount((prev) => prev + 1)
+      const notificationLink = newNotif.link ?? undefined
+      toast.info(`新通知: ${newNotif.title}`, {
+        description: newNotif.content,
+        action: notificationLink
+          ? {
+              label: '去查看',
+              onClick: () => navigate(notificationLink),
+            }
+          : undefined,
+      })
+    },
+    [navigate],
+  )
+
+  useNotificationSocket(user?.id, handleNewNotification)
 
   // 轮询未读“私信”数（15 秒）- 暂时保留私信轮询，直到私信也改造为 WS
   useEffect(() => {
