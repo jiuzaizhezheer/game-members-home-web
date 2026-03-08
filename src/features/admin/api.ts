@@ -15,6 +15,9 @@ import type {
   AdminBannerListOut,
   AdminCouponItemOut,
   AdminCouponListOut,
+  AdminReportDetailOut,
+  AdminReportListOut,
+  ReportHandleIn,
 } from './types'
 import type { GroupCreateIn, GroupItemOut } from '@/features/community/types'
 import type { CategoryOut } from '@/features/category/types'
@@ -67,6 +70,31 @@ export const adminApi = {
     if (params?.page) qs.set('page', String(params.page))
     if (params?.page_size) qs.set('page_size', String(params.page_size))
     return await requestJson<AdminLogListOut>(`/admins/logs/?${qs}`, { method: 'GET' })
+  },
+
+  async getReports(params?: {
+    page?: number
+    page_size?: number
+    status?: string
+    target_type?: string
+  }): Promise<AdminReportListOut> {
+    const qs = new URLSearchParams()
+    if (params?.page) qs.set('page', String(params.page))
+    if (params?.page_size) qs.set('page_size', String(params.page_size))
+    if (params?.status) qs.set('status', params.status)
+    if (params?.target_type) qs.set('target_type', params.target_type)
+    const query = qs.toString()
+    return await requestJson<AdminReportListOut>(`/admins/reports/${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    })
+  },
+
+  async getReportDetail(id: string): Promise<AdminReportDetailOut> {
+    return await requestJson<AdminReportDetailOut>(`/admins/reports/${id}`, { method: 'GET' })
+  },
+
+  async handleReport(id: string, payload: ReportHandleIn): Promise<boolean> {
+    return await requestJson<boolean>(`/admins/reports/${id}`, { method: 'PATCH', body: payload })
   },
 
   /** 创建社群话题圈 */

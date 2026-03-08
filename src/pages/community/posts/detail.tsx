@@ -6,6 +6,7 @@ import {
   Eye,
   Heart,
   MessageSquare,
+  Flag,
   X,
   Reply,
   Send,
@@ -16,7 +17,9 @@ import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { communityApi } from '@/features/community/api'
 import type { PostDetailOut, CommentItemOut } from '@/features/community/types'
+import type { ReportTargetType } from '@/features/report/types'
 import { getFileUrl } from '@/shared/utils/file'
+import ReportModal from '@/components/common/ReportModal'
 import ImageViewer from '@/components/ui/ImageViewer'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -28,11 +31,13 @@ const CommentNode = ({
   isChild = false,
   onLike,
   onReply,
+  onReport,
 }: {
   comment: CommentTreeNode
   isChild?: boolean
   onLike: (id: string) => void
   onReply: (comment: CommentItemOut) => void
+  onReport: (comment: CommentItemOut) => void
 }) => {
   const [expanded, setExpanded] = useState(false)
   const hasMoreBefore = comment.children.length > 1
@@ -109,6 +114,12 @@ const CommentNode = ({
           >
             <Reply size={12} /> 回复
           </button>
+          <button
+            onClick={() => onReport(comment)}
+            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-rose-600 transition-colors"
+          >
+            <Flag size={12} /> 举报
+          </button>
         </div>
 
         {/* Nested Children */}
@@ -122,6 +133,7 @@ const CommentNode = ({
                   isChild={true}
                   onLike={onLike}
                   onReply={onReply}
+                  onReport={onReport}
                 />
               ))}
             </div>
@@ -151,6 +163,10 @@ export default function PostDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerIndex, setViewerIndex] = useState(0)
+  const [reportTarget, setReportTarget] = useState<{
+    type: ReportTargetType
+    id: string
+  } | null>(null)
 
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -224,6 +240,14 @@ export default function PostDetailPage() {
   const handleReply = (comment: CommentItemOut) => {
     setReplyingTo(comment)
     commentInputRef.current?.focus()
+  }
+
+  const handleReportComment = (comment: CommentItemOut) => {
+    if (!state.isAuthenticated) {
+      toast.error('请先登录')
+      return
+    }
+    setReportTarget({ type: 'comment', id: comment.id })
   }
 
   const handleSubmitComment = async () => {
@@ -310,6 +334,15 @@ export default function PostDetailPage() {
               >
                 <Pencil size={18} />
               </Link>
+            )}
+            {state.isAuthenticated && (
+              <button
+                onClick={() => setReportTarget({ type: 'post', id: post.id })}
+                className="rounded-full p-2 text-zinc-400 hover:bg-zinc-50 hover:text-rose-600 transition-colors"
+                title="举报"
+              >
+                <Flag size={18} />
+              </button>
             )}
             <button
               onClick={handleShare}
@@ -441,7 +474,12 @@ export default function PostDetailPage() {
 
             return roots.map((root) => (
               <div key={root.id} className="border-b border-zinc-50 last:border-0 pb-6 last:pb-0">
-                <CommentNode comment={root} onLike={handleLikeComment} onReply={handleReply} />
+                <CommentNode
+                  comment={root}
+                  onLike={handleLikeComment}
+                  onReply={handleReply}
+                  onReport={handleReportComment}
+                />
               </div>
             ))
           })()}
@@ -485,6 +523,12 @@ export default function PostDetailPage() {
           </button>
         </div>
       </div>
+      <ReportModal
+        open={!!reportTarget}
+        onClose={() => setReportTarget(null)}
+        targetType={reportTarget?.type ?? 'post'}
+        targetId={reportTarget?.id ?? ''}
+      />
       {/* Image Viewer */}
       <ImageViewer
         images={post.images}

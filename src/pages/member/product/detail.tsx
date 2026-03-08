@@ -4,6 +4,7 @@ import {
   ShoppingCart,
   Heart,
   Share2,
+  Flag,
   Loader2,
   ArrowLeft,
   Archive,
@@ -18,6 +19,7 @@ import { favoriteService } from '@/features/favorite/service'
 import { useAuth } from '@/contexts/AuthContext'
 import type { ProductPublicOut } from '@/features/product/types'
 import { getFileUrl } from '@/shared/utils/file'
+import ReportModal from '@/components/common/ReportModal'
 import { ReviewList } from '@/features/review/components/ReviewList'
 import { Star } from 'lucide-react'
 
@@ -32,6 +34,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1)
   const [isFavorited, setIsFavorited] = useState(false)
   const [favLoading, setFavLoading] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -284,6 +287,14 @@ export default function ProductDetailPage() {
               <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-sm backdrop-blur-sm transition-all hover:bg-indigo-50 hover:text-indigo-500 dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:bg-zinc-700/90 dark:hover:text-indigo-400">
                 <Share2 size={16} />
               </button>
+              {authState.isAuthenticated && (
+                <button
+                  onClick={() => setReportOpen(true)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-sm backdrop-blur-sm transition-all hover:bg-rose-50 hover:text-rose-600 dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:bg-zinc-700/90 dark:hover:text-rose-400"
+                >
+                  <Flag size={16} />
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
@@ -477,6 +488,12 @@ export default function ProductDetailPage() {
           <ReviewList productId={product.id} />
         </div>
       </div>
+      <ReportModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        targetType="product"
+        targetId={product.id}
+      />
     </div>
   )
 }
