@@ -20,6 +20,7 @@ import { messageService } from '@/features/message/service'
 import { notificationApi } from '@/features/notification/api'
 import { getFileUrl } from '@/shared/utils/file'
 import { useConfirm } from '@/components/ui/confirmContext'
+import { useMessageSocket } from '@/hooks/useMessageSocket'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { toast } from 'sonner'
 
@@ -54,16 +55,17 @@ export default function Navbar() {
     return { msgCount, notifCount }
   }, [isAuthenticated])
 
-  const applyUnreadCounts = useCallback(async () => {
-    try {
-      const data = await requestUnreadCounts()
-      if (!data) return
-      setUnreadMessageCount(data.msgCount)
-      setUnreadNotificationCount(data.notifCount.count)
-    } catch (e) {
-      console.error('Failed to fetch unread counts', e)
-    }
-  }, [requestUnreadCounts])
+  const refreshUnreadMessageCount = useCallback(async () => {
+    if (!isAuthenticated) return
+    const msgCount = await messageService.getUnreadCount()
+    setUnreadMessageCount(msgCount)
+  }, [isAuthenticated])
+
+  const refreshUnreadNotificationCount = useCallback(async () => {
+    if (!isAuthenticated) return
+    const notifCount = await notificationApi.getUnreadCount()
+    setUnreadNotificationCount(notifCount.count)
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -87,7 +89,6 @@ export default function Navbar() {
   // WebSocket 实时通知
   const handleNewNotification = useCallback(
     (newNotif: { title: string; content: string; link?: string | null }) => {
-      setUnreadNotificationCount((prev) => prev + 1)
       const notificationLink = newNotif.link ?? undefined
       toast.info(`新通知: ${newNotif.title}`, {
         description: newNotif.content,
@@ -98,21 +99,16 @@ export default function Navbar() {
             }
           : undefined,
       })
+      void refreshUnreadNotificationCount()
     },
-    [navigate],
+    [navigate, refreshUnreadNotificationCount],
   )
 
   useNotificationSocket(user?.id, handleNewNotification)
 
-  // 轮询未读“私信”数（15 秒）- 暂时保留私信轮询，直到私信也改造为 WS
-  useEffect(() => {
-    if (!isAuthenticated) return
-    const timer = setInterval(() => {
-      // 只请求私信数，或者全部请求一遍以保底
-      void applyUnreadCounts()
-    }, 15_000)
-    return () => clearInterval(timer)
-  }, [isAuthenticated, applyUnreadCounts])
+  useMessageSocket(() => {
+    void refreshUnreadMessageCount()
+  })
 
   // 未登录时购物车数量始终为 0
   const displayCartCount = isAuthenticated ? cartCount : 0
