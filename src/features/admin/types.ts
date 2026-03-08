@@ -195,3 +195,44 @@ export type AdminCouponListOut = {
   items: AdminCouponItemOut[]
   total: number
 }
+
+// --- 举报管理 ---
+export type ReportTargetType = 'post' | 'comment' | 'product'
+export type ReportStatus = 'pending' | 'handled'
+export type ReportResult = 'success' | 'fail'
+
+export type AdminReportItemOut = {
+  id: string
+  reporter_id: string
+  reporter_name: string
+  reporter_avatar_url: string | null
+  target_type: ReportTargetType
+  target_id: string
+  reason: string
+  description: string | null
+  evidence_urls: string[]
+  status: ReportStatus
+  result: ReportResult | null
+  handled_by: string | null
+  handled_note: string | null
+  handled_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type AdminReportListOut = {
+  items: AdminReportItemOut[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export type AdminReportDetailOut = {
+  report: AdminReportItemOut
+  target_preview: string | null
+}
+
+export type ReportHandleIn = {
+  result: 'success' | 'fail'
+  handled_note?: string | null
+}
