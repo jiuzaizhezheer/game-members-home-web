@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { messageService } from '@/features/message/service'
 import type { MessageItemOut } from '@/features/message/types'
+import { useMessageSocket } from '@/hooks/useMessageSocket'
 import { getFileUrl } from '@/shared/utils/file'
 
 interface ChatWindowProps {
@@ -31,12 +32,23 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
+  const upsertMessages = useCallback((next: MessageItemOut[]) => {
+    setMessages((prev) => {
+      const byId = new Map<string, MessageItemOut>()
+      prev.forEach((m) => byId.set(m.id, m))
+      next.forEach((m) => byId.set(m.id, m))
+      return Array.from(byId.values()).sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      )
+    })
+  }, [])
+
   const fetchMessages = useCallback(
     async (scroll = true) => {
       if (!partnerUserId) return
       try {
         const res = await messageService.getMessages(partnerUserId)
-        setMessages(res.items)
+        upsertMessages(res.items)
         setHasMore(res.has_more)
         if (scroll) {
           setTimeout(scrollToBottom, 100)
@@ -47,17 +59,30 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
         setLoading(false)
       }
     },
-    [partnerUserId, scrollToBottom],
+    [partnerUserId, scrollToBottom, upsertMessages],
   )
+
+  useMessageSocket((data) => {
+    if (data.sender_id !== partnerUserId) return
+
+    const nextItem: MessageItemOut = {
+      id: data.id,
+      sender_id: data.sender_id,
+      content: data.content,
+      content_type: data.content_type,
+      is_mine: false,
+      created_at: data.created_at,
+    }
+    upsertMessages([nextItem])
+    setTimeout(scrollToBottom, 50)
+    messageService.markAsRead(partnerUserId).catch(() => {})
+  })
 
   useEffect(() => {
     fetchMessages()
     if (partnerUserId) {
       messageService.markAsRead(partnerUserId).catch(() => {})
     }
-
-    const timer = setInterval(() => fetchMessages(false), 5_000)
-    return () => clearInterval(timer)
   }, [fetchMessages, partnerUserId])
 
   const handleSend = async () => {
@@ -70,8 +95,18 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
         receiver_user_id: partnerUserId,
         content,
       })
+      upsertMessages([
+        {
+          id: `local-${Date.now()}`,
+          sender_id: 'me',
+          content,
+          content_type: 'text',
+          is_mine: true,
+          created_at: new Date().toISOString(),
+        },
+      ])
       setInputValue('')
-      await fetchMessages()
+      setTimeout(scrollToBottom, 50)
     } catch {
       toast.error('发送失败')
     } finally {
@@ -122,10 +157,20 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
         content: JSON.stringify(refProduct),
         content_type: 'product_card',
       })
+      upsertMessages([
+        {
+          id: `local-${Date.now()}`,
+          sender_id: 'me',
+          content: JSON.stringify(refProduct),
+          content_type: 'product_card',
+          is_mine: true,
+          created_at: new Date().toISOString(),
+        },
+      ])
       setRefProduct(null) // Hide card after sending
       // Clear location state to prevent reappearance on refresh
       navigate('.', { replace: true, state: {} })
-      await fetchMessages()
+      setTimeout(scrollToBottom, 50)
     } catch {
       toast.error('发送失败')
     }
