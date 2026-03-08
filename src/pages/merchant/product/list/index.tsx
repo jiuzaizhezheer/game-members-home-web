@@ -17,12 +17,15 @@ import { productService } from '@/features/product/service'
 import type { ProductOut, ProductListIn } from '@/features/product/types'
 import { useDebounce } from '@/hooks/useDebounce'
 import { getFileUrl } from '@/shared/utils/file'
+import { categoryService } from '@/features/category/service'
+import type { CategoryOut } from '@/features/category/types'
 
 export default function ProductList() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [products, setProducts] = useState<ProductOut[]>([])
   const [total, setTotal] = useState(0)
+  const [categories, setCategories] = useState<CategoryOut[]>([])
   const confirm = useConfirm()
 
   // 查询状态
@@ -31,6 +34,7 @@ export default function ProductList() {
     page_size: 10,
     keyword: '',
     status: undefined,
+    category_id: undefined,
   })
 
   // 搜索防抖
@@ -57,6 +61,13 @@ export default function ProductList() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  useEffect(() => {
+    categoryService
+      .getAll()
+      .then((res) => setCategories(res))
+      .catch(() => setCategories([]))
+  }, [])
 
   // 处理上下架
   const handleStatusChange = async (product: ProductOut) => {
@@ -146,6 +157,27 @@ export default function ProductList() {
               <option value="">全部状态</option>
               <option value="on">上架中</option>
               <option value="off">已下架</option>
+            </select>
+            <Filter className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+          </div>
+          <div className="relative">
+            <select
+              value={queryParams.category_id || ''}
+              onChange={(e) =>
+                setQueryParams({
+                  ...queryParams,
+                  category_id: e.target.value || undefined,
+                  page: 1,
+                })
+              }
+              className="h-10 appearance-none rounded-xl border border-zinc-200 bg-white pl-4 pr-10 text-sm font-medium text-zinc-700 outline-none transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 hover:border-zinc-300"
+            >
+              <option value="">全部分类</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
             <Filter className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 pointer-events-none" />
           </div>

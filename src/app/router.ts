@@ -66,6 +66,7 @@ const AdminBannersPage = lazy(() => import('@/pages/admin/content/AdminBannersPa
 const AdminCouponListPage = lazy(
   () => import('@/pages/admin/marketing/coupons/AdminCouponListPage'),
 )
+const AdminCategoriesPage = lazy(() => import('@/pages/admin/categories'))
 
 // ─── Helper: wrap a lazy element in Suspense (null fallback - layout handles UI) ─
 const s = (element: React.ReactNode) => createElement(Suspense, { fallback: null }, element)
@@ -167,6 +168,7 @@ export const router = createBrowserRouter([
       { path: 'users', element: s(createElement(AdminUsersPage)) },
       { path: 'merchants', element: s(createElement(AdminMerchantsPage)) },
       { path: 'products', element: s(createElement(AdminProductsPage)) },
+      { path: 'categories', element: s(createElement(AdminCategoriesPage)) },
       { path: 'content', element: s(createElement(AdminContentPage)) },
       { path: 'banners', element: s(createElement(AdminBannersPage)) },
       { path: 'logs', element: s(createElement(AdminLogsPage)) },

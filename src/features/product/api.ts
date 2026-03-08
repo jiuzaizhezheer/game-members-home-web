@@ -17,6 +17,7 @@ export const productApi = {
     if (params.page_size) searchParams.append('page_size', params.page_size.toString())
     if (params.keyword) searchParams.append('keyword', params.keyword)
     if (params.status) searchParams.append('status', params.status)
+    if (params.category_id) searchParams.append('category_id', params.category_id)
 
     const queryString = searchParams.toString()
     return await requestJson<ProductListOut>(`/products/my/list?${queryString}`, {

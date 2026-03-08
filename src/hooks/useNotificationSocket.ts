@@ -14,11 +14,28 @@ export function useNotificationSocket(
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<number | null>(null)
   const connectRef = useRef<() => void>(() => {})
+  const reconnectAttemptsRef = useRef(0)
+  const onNewNotificationRef = useRef(onNewNotification)
   const [socket, setSocket] = useState<WebSocket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
 
+  useEffect(() => {
+    onNewNotificationRef.current = onNewNotification
+  }, [onNewNotification])
+
   const connect = useCallback(() => {
     if (!userId) return
+    if (
+      socketRef.current &&
+      (socketRef.current.readyState === WebSocket.OPEN ||
+        socketRef.current.readyState === WebSocket.CONNECTING)
+    ) {
+      return
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current)
+      reconnectTimeoutRef.current = null
+    }
 
     // 获取基础 API 地址并转换为 ws 协议
     const apiBase = getApiBaseUrl()
@@ -32,7 +49,11 @@ export function useNotificationSocket(
       wsBase = `${protocol}//${window.location.host}${apiBase}`
     }
 
-    const wsUrl = `${wsBase}/notifications/ws/${userId}`
+    let normalizedWsBase = wsBase.replace(/\/+$/, '')
+    if (!normalizedWsBase.endsWith('/api')) {
+      normalizedWsBase = `${normalizedWsBase}/api`
+    }
+    const wsUrl = `${normalizedWsBase}/notifications/ws/${userId}`
 
     const socket = new WebSocket(wsUrl)
     socketRef.current = socket
@@ -41,6 +62,7 @@ export function useNotificationSocket(
     socket.onopen = () => {
       console.log('[WebSocket] Notification connection established')
       setIsConnected(true)
+      reconnectAttemptsRef.current = 0
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
         reconnectTimeoutRef.current = null
@@ -51,7 +73,7 @@ export function useNotificationSocket(
       try {
         const payload: NotificationPayload = JSON.parse(event.data)
         if (payload.type === 'NEW_NOTIFICATION') {
-          onNewNotification(payload.data)
+          onNewNotificationRef.current(payload.data)
         }
       } catch (err) {
         console.error('[WebSocket] Failed to parse message', err)
@@ -61,18 +83,19 @@ export function useNotificationSocket(
     socket.onclose = () => {
       console.log('[WebSocket] Notification connection closed')
       setIsConnected(false)
-      // 尝试自动重连 (5秒后)
+      reconnectAttemptsRef.current += 1
+      const delay = Math.min(30_000, 1_000 * 2 ** (reconnectAttemptsRef.current - 1))
+      // 尝试自动重连
       reconnectTimeoutRef.current = window.setTimeout(() => {
         connectRef.current()
-      }, 5000)
+      }, delay)
     }
 
     socket.onerror = (err) => {
       console.error('[WebSocket] Notification error', err)
       setIsConnected(false)
-      socket.close()
     }
-  }, [userId, onNewNotification])
+  }, [userId])
 
   useEffect(() => {
     connectRef.current = connect
@@ -95,6 +118,7 @@ export function useNotificationSocket(
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
       }
+      reconnectAttemptsRef.current = 0
     }
   }, [connect])
 

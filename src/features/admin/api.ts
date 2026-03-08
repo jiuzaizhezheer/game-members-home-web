@@ -17,11 +17,19 @@ import type {
   AdminCouponListOut,
 } from './types'
 import type { GroupCreateIn, GroupItemOut } from '@/features/community/types'
+import type { CategoryOut } from '@/features/category/types'
 import type { CouponCreateIn } from '@/features/marketing/types'
 
 type AdminCouponUpdateIn = Partial<CouponCreateIn> & {
   status?: 'active' | 'inactive'
 }
+
+type AdminCategoryCreateIn = {
+  name: string
+  slug: string
+}
+
+type AdminCategoryUpdateIn = Partial<AdminCategoryCreateIn>
 
 export const adminApi = {
   /** 获取管理员个人信息 */
@@ -32,6 +40,25 @@ export const adminApi = {
   /** 获取仪表盘统计数据 */
   async getDashboardStats(): Promise<DashboardStats> {
     return await requestJson<DashboardStats>('/admins/dashboard', { method: 'GET' })
+  },
+
+  async getCategories(): Promise<CategoryOut[]> {
+    return await requestJson<CategoryOut[]>('/admins/categories/', { method: 'GET' })
+  },
+
+  async createCategory(payload: AdminCategoryCreateIn): Promise<CategoryOut> {
+    return await requestJson<CategoryOut>('/admins/categories/', { method: 'POST', body: payload })
+  },
+
+  async updateCategory(id: string, payload: AdminCategoryUpdateIn): Promise<CategoryOut> {
+    return await requestJson<CategoryOut>(`/admins/categories/${id}`, {
+      method: 'PATCH',
+      body: payload,
+    })
+  },
+
+  async deleteCategory(id: string): Promise<void> {
+    await requestJson<void>(`/admins/categories/${id}`, { method: 'DELETE' })
   },
 
   /** 获取操作日志列表 */
