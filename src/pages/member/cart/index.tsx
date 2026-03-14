@@ -11,7 +11,6 @@ import {
   Ticket,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { toast } from 'sonner'
 import { cartService } from '@/features/cart/service'
 import type { CartOut, CartItemOut } from '@/features/cart/types'
 import { getFileUrl } from '@/shared/utils/file'
@@ -30,7 +29,6 @@ export default function CartPage() {
       setCart(data)
     } catch (error) {
       console.error('Failed to fetch cart', error)
-      toast.error('获取购物车失败')
     } finally {
       setLoading(false)
     }
@@ -49,7 +47,7 @@ export default function CartPage() {
       await cartService.updateItem(item.id, { quantity: newQty })
       await fetchCart()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '更新数量失败')
+      console.error(error)
     } finally {
       setUpdatingId(null)
     }
@@ -58,10 +56,9 @@ export default function CartPage() {
   const handleRemoveItem = async (itemId: string) => {
     try {
       await cartService.removeItem(itemId)
-      toast.success('商品已移除')
       await fetchCart()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '移除商品失败')
+      console.error(error)
     }
   }
 
@@ -76,10 +73,9 @@ export default function CartPage() {
     if (!confirmed) return
     try {
       await cartService.clearCart()
-      toast.success('购物车已清空')
       await fetchCart()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '清空购物车失败')
+      console.error(error)
     }
   }
 

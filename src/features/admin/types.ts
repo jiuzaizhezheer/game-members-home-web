@@ -33,27 +33,6 @@ export type AdminUserListOut = {
   page_size: number
 }
 
-// --- 商家管理 ---
-export type AdminMerchantItemOut = {
-  user_id: string
-  username: string
-  email: string
-  is_active: boolean
-  merchant_id: string
-  shop_name: string
-  contact_phone: string | null
-  shop_desc: string | null
-  logo_url: string | null
-  created_at: string
-}
-
-export type AdminMerchantListOut = {
-  items: AdminMerchantItemOut[]
-  total: number
-  page: number
-  page_size: number
-}
-
 // --- 商品管理 (复用 product types) ---
 export type AdminProductItem = {
   id: string

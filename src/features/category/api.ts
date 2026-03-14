@@ -6,6 +6,7 @@ export const categoryApi = {
   async getAll(): Promise<CategoryOut[]> {
     return await requestJson<CategoryOut[]>('/categories/', {
       method: 'GET',
+      auth: false,
     })
   },
 }

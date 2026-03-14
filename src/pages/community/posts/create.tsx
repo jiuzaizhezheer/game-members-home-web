@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom'
 import { Loader2, Image, X, Video, ChevronLeft, Zap } from 'lucide-react'
-import { toast } from 'sonner'
 import { communityApi } from '@/features/community/api'
 import type { GroupDetailOut } from '@/features/community/types'
 import { getFileUrl } from '@/shared/utils/file'
@@ -52,7 +51,6 @@ export default function CreatePostPage() {
           }
         })
         .catch(() => {
-          toast.error('帖子不存在')
           navigate('/community')
         })
         .finally(() => setLoading(false))
@@ -63,11 +61,9 @@ export default function CreatePostPage() {
           .getGroupDetail(groupId)
           .then(setGroup)
           .catch(() => {
-            toast.error('圈子不存在')
             navigate('/community')
           })
       } else {
-        toast.error('请先选择一个圈子')
         navigate('/community')
       }
     }
@@ -78,7 +74,6 @@ export default function CreatePostPage() {
     if (!files || files.length === 0) return
 
     if (images.length + files.length > 9) {
-      toast.error('最多只能上传9张图片')
       return
     }
 
@@ -90,8 +85,8 @@ export default function CreatePostPage() {
         newImages.push(url)
       }
       setImages(newImages)
-    } catch {
-      toast.error('图片上传失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setUploading(false)
     }
@@ -106,7 +101,6 @@ export default function CreatePostPage() {
     if (!files || files.length === 0) return
 
     if (videos.length + files.length > 1) {
-      toast.error('最多只能上传1个视频')
       return
     }
 
@@ -116,15 +110,14 @@ export default function CreatePostPage() {
       for (let i = 0; i < files.length; i++) {
         // Ensure file is video
         if (!files[i].type.startsWith('video/')) {
-          toast.error('请选择视频文件')
           continue
         }
         const { url } = await commonApi.uploadFile(files[i])
         newVideos.push(url)
       }
       setVideos(newVideos)
-    } catch {
-      toast.error('视频上传失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setUploading(false)
     }
@@ -137,7 +130,6 @@ export default function CreatePostPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !content.trim()) {
-      toast.error('标题和内容不能为空')
       return
     }
 
@@ -153,7 +145,6 @@ export default function CreatePostPage() {
           images,
           videos,
         })
-        toast.success('修改成功')
         navigate(-1)
       } else {
         await communityApi.createPost({
@@ -163,13 +154,12 @@ export default function CreatePostPage() {
           images,
           videos,
         })
-        toast.success('发布成功')
         navigate(`/community/groups/${finalGroupId}`)
       }
     } catch (error) {
       const err = error as { response?: { data?: { message?: string } }; message?: string }
-      const errMsg = err.response?.data?.message || err.message || '发布失败，请稍后重试'
-      toast.error(errMsg)
+      const message = err.response?.data?.message || err.message || '发布失败，请稍后重试'
+      console.error(message)
     } finally {
       setSubmitting(false)
     }

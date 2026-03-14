@@ -1,8 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, Send, Loader2, Image as LucideImage, X } from 'lucide-react'
-import { toast } from 'sonner'
-
 import { messageService } from '@/features/message/service'
 import type { MessageItemOut } from '@/features/message/types'
 import { useMessageSocket } from '@/hooks/useMessageSocket'
@@ -107,8 +105,8 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
       ])
       setInputValue('')
       setTimeout(scrollToBottom, 50)
-    } catch {
-      toast.error('发送失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setSending(false)
     }
@@ -171,8 +169,8 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
       // Clear location state to prevent reappearance on refresh
       navigate('.', { replace: true, state: {} })
       setTimeout(scrollToBottom, 50)
-    } catch {
-      toast.error('发送失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 

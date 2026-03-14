@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FolderTree, Loader2, Plus, Save, Trash2, X } from 'lucide-react'
-import { toast } from 'sonner'
 import { useConfirm } from '@/components/ui/confirmContext'
 import { adminApi } from '@/features/admin/api'
 import type { CategoryOut } from '@/features/category/types'
@@ -26,7 +25,6 @@ export default function AdminCategoriesPage() {
       setCategories(res)
     } catch (e) {
       console.error(e)
-      toast.error('获取分类列表失败')
     } finally {
       setLoading(false)
     }
@@ -47,7 +45,6 @@ export default function AdminCategoriesPage() {
     const slug = form.slug.trim()
 
     if (!name || !slug) {
-      toast.error('请填写分类名称与别名')
       return
     }
 
@@ -57,7 +54,6 @@ export default function AdminCategoriesPage() {
           name,
           slug,
         })
-        toast.success('已保存')
         setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
         resetForm()
         return
@@ -67,12 +63,10 @@ export default function AdminCategoriesPage() {
         name,
         slug,
       })
-      toast.success('已创建')
       setCategories((prev) => [created, ...prev])
       setForm(emptyForm)
     } catch (err) {
       console.error(err)
-      toast.error('操作失败')
     }
   }
 
@@ -98,12 +92,10 @@ export default function AdminCategoriesPage() {
 
     try {
       await adminApi.deleteCategory(category.id)
-      toast.success('已删除')
       setCategories((prev) => prev.filter((c) => c.id !== category.id))
       if (editingId === category.id) resetForm()
     } catch (err) {
       console.error(err)
-      toast.error('删除失败（可能被商品引用）')
     }
   }
 
@@ -133,16 +125,16 @@ export default function AdminCategoriesPage() {
             <input
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              placeholder="例如：手办"
+              placeholder="例如：游戏"
               className="h-10 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none transition-all placeholder:text-zinc-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
             />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-xs font-medium text-zinc-600">别名（slug）</label>
+            <label className="mb-1 block text-xs font-medium text-zinc-600">英文名</label>
             <input
               value={form.slug}
               onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
-              placeholder="例如：figures"
+              placeholder="例如：games"
               className="h-10 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none transition-all placeholder:text-zinc-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
             />
           </div>
@@ -174,7 +166,7 @@ export default function AdminCategoriesPage() {
             <thead className="bg-zinc-50/80 text-zinc-500">
               <tr>
                 <th className="px-6 py-4 font-medium">名称</th>
-                <th className="px-6 py-4 font-medium">slug</th>
+                <th className="px-6 py-4 font-medium">英文名</th>
                 <th className="px-6 py-4 text-right font-medium">操作</th>
               </tr>
             </thead>

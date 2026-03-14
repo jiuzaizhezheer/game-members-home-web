@@ -10,6 +10,14 @@ const baseUrl = getApiBaseUrl()
  */
 let refreshPromise: Promise<string> | null = null
 
+function normalizeErrorMessage(message: string): string {
+  let normalized = message
+  if (normalized.startsWith('Value error, ')) {
+    normalized = normalized.replace('Value error, ', '')
+  }
+  return normalized
+}
+
 /**
  * 刷新 Access Token
  * 使用 Cookie 中的 refresh_token（自动发送）
@@ -48,11 +56,27 @@ async function refreshAccessToken(): Promise<string> {
       clearAccessToken()
       // 通知 AuthContext 更新状态
       window.dispatchEvent(new CustomEvent('auth:logout'))
-      // 强制跳转登录页
-      if (!window.location.pathname.startsWith('/auth/login')) {
+      // 强制跳转登录页（仅针对受保护的页面，如 /member/profile, /merchant, /admin 等）
+      // 允许首页、商场主页 (/member/home)、商品详情页等公开页面保持访客状态
+      const protectedPrefixes = [
+        '/member/coupons',
+        '/member/cart',
+        '/member/checkout',
+        '/member/order',
+        '/member/profile',
+        '/member/favorites',
+        '/member/messages',
+        '/member/notifications',
+        '/member/points',
+        '/merchant',
+        '/admin',
+      ]
+      const currentPath = window.location.pathname
+      const isProtected = protectedPrefixes.some((p) => currentPath.startsWith(p))
+
+      if (isProtected) {
         toast.error('登录已过期，请重新登录')
-        window.location.href =
-          '/auth/login?redirect=' + encodeURIComponent(window.location.pathname)
+        window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`
       }
       throw error
     } finally {
@@ -175,9 +199,10 @@ export async function requestJson<T>(path: string, options: RequestJsonOptions):
         ? String((payload as { message: unknown }).message)
         : `Request failed: ${res.status}`
 
-    setTimeout(() => toast.error(message), 0)
+    const normalizedMessage = normalizeErrorMessage(message)
+    setTimeout(() => toast.error(normalizedMessage), 0)
 
-    throw new Error(message)
+    throw new Error(normalizedMessage)
   }
 
   // 统一处理成功消息弹窗

@@ -13,7 +13,6 @@ import {
 import { userService } from '@/features/user/service'
 import type { PointLogListOut, UserOut } from '@/features/user/types'
 import { motion, AnimatePresence } from 'framer-motion'
-import { toast } from 'sonner'
 import { cn } from '@/shared/utils/cn'
 
 export default function PointsHistoryPage() {
@@ -35,7 +34,6 @@ export default function PointsHistoryPage() {
       setHistory(h)
     } catch (error) {
       console.error('Failed to fetch points history', error)
-      toast.error('历史数据加载失败')
     } finally {
       setLoading(false)
     }

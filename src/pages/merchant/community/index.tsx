@@ -33,8 +33,8 @@ const GroupManagement = () => {
       setLoading(true)
       const res = await merchantApi.getMyGroups()
       setGroups(res.items || [])
-    } catch {
-      toast.error('加载话题圈失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -68,9 +68,8 @@ const GroupManagement = () => {
     try {
       const { url } = await commonApi.uploadFile(file)
       setFormData((prev) => ({ ...prev, cover_image: url }))
-      toast.success('上传成功')
-    } catch {
-      toast.error('图片上传失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setUploading(false)
     }
@@ -84,15 +83,13 @@ const GroupManagement = () => {
     try {
       if (editingGroup) {
         await merchantApi.updateGroup(editingGroup.id, formData)
-        toast.success('更新成功')
       } else {
         await merchantApi.createGroup(formData)
-        toast.success('创建成功')
       }
       setIsModalOpen(false)
       fetchGroups()
-    } catch {
-      toast.error(editingGroup ? '更新失败' : '创建失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setSubmitting(false)
     }
@@ -303,8 +300,8 @@ const PostModeration = () => {
       setLoading(true)
       const res = await merchantApi.getPendingPosts() // Currently gets all posts sorted by new
       setPosts(res.items || [])
-    } catch {
-      toast.error('加载帖子失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -320,8 +317,8 @@ const PostModeration = () => {
       toast.success(post.is_hidden ? '帖子已显示' : '帖子已隐藏')
       // Optimistic update or refresh
       setPosts(posts.map((p) => (p.id === post.id ? { ...p, is_hidden: !p.is_hidden } : p)))
-    } catch {
-      toast.error('操作失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 

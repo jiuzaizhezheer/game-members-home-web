@@ -30,7 +30,6 @@ import { commonApi } from '@/features/common/api'
 import { getFileUrl } from '@/shared/utils/file'
 import { useAuth } from '@/contexts/AuthContext'
 import ChangePasswordModal from '@/components/ui/ChangePasswordModal'
-import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 
 export default function ProfilePage() {
@@ -67,7 +66,6 @@ export default function ProfilePage() {
       })
     } catch (error) {
       console.error('Failed to fetch profile', error)
-      toast.error('获取个人资料失败')
     } finally {
       setLoading(false)
     }
@@ -87,10 +85,8 @@ export default function ProfilePage() {
         avatar_url: updated.avatar_url,
       })
       reset(data)
-      toast.success('个人资料已更新')
     } catch (error) {
       console.error('Update profile failed', error)
-      toast.error('更新失败，请稍后重试')
     } finally {
       setUpdating(false)
     }
@@ -104,10 +100,8 @@ export default function ProfilePage() {
     try {
       const { url } = await commonApi.uploadFile(file)
       setValue('avatar_url', url, { shouldDirty: true })
-      toast.success('请点击“保存更改”按钮以应用修改')
     } catch (error) {
       console.error('Upload avatar failed', error)
-      toast.error('上传失败')
     } finally {
       setIsUploading(false)
     }

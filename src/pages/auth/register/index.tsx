@@ -12,7 +12,6 @@ import {
   KeyRound,
   RefreshCw,
 } from 'lucide-react'
-import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
@@ -29,10 +28,9 @@ export default function RegisterPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  // 从 URL 获取 role 参数
+  // 从 URL 获取 role 参数，禁止注册管理员
   const urlRole = searchParams.get('role') as Role | null
-  const defaultRole: Role =
-    urlRole && ['member', 'merchant', 'admin'].includes(urlRole) ? urlRole : 'member'
+  const defaultRole: Role = urlRole && ['member', 'merchant'].includes(urlRole) ? urlRole : 'member'
 
   // ==================== 引用 (Refs) ====================
   /** 下拉框容器引用 */
@@ -87,7 +85,6 @@ export default function RegisterPage() {
       setValue('captcha_code', '') // 刷新后清空输入
     } catch (err) {
       console.error('Failed to fetch captcha:', err)
-      toast.error('获取验证码失败')
     } finally {
       setCaptchaLoading(false)
     }
@@ -99,8 +96,9 @@ export default function RegisterPage() {
   async function handleRegister(data: AuthRegisterIn) {
     try {
       await authService.register(data)
-      toast.success('注册成功，请登录')
-      navigate(`/auth/login?role=${data.role}`)
+      navigate(`/auth/login?role=${data.role}`, {
+        state: { email: data.email, password: data.password },
+      })
     } catch (err) {
       console.error('Register failed:', err)
       // 注册失败通常需要刷新验证码
@@ -153,7 +151,7 @@ export default function RegisterPage() {
                 {isSelectOpen && (
                   <div className="absolute left-0 top-full z-50 mt-2 w-full overflow-hidden rounded-2xl border border-zinc-100 bg-white p-1 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 ring-1 ring-black/5">
                     <div className="max-h-60 overflow-y-auto">
-                      {ROLE_OPTIONS.map((option) => {
+                      {ROLE_OPTIONS.filter((opt) => opt.value !== 'admin').map((option) => {
                         const Icon = option.icon
                         const isActive = role === option.value
                         return (

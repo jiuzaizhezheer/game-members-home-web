@@ -71,8 +71,8 @@ export default function AdminContentPage() {
       })
       setPosts(res.items)
       setPostsTotal(res.total)
-    } catch {
-      toast.error('获取帖子列表失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setPostsLoading(false)
     }
@@ -84,8 +84,8 @@ export default function AdminContentPage() {
       const res = await adminApi.getComments({ page: commentsPage, page_size: commentsPageSize })
       setComments(res.items)
       setCommentsTotal(res.total)
-    } catch {
-      toast.error('获取评论列表失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setCommentsLoading(false)
     }
@@ -101,8 +101,8 @@ export default function AdminContentPage() {
       })
       setReviews(res.items)
       setReviewsTotal(res.total)
-    } catch {
-      toast.error('获取评价列表失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setReviewsLoading(false)
     }
@@ -124,8 +124,8 @@ export default function AdminContentPage() {
       await adminApi.reviewPost(post.id, newHidden)
       toast.success(newHidden ? '帖子已隐藏' : '帖子已显示')
       setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, is_hidden: newHidden } : p)))
-    } catch {
-      toast.error('审核操作失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -142,11 +142,10 @@ export default function AdminContentPage() {
       return
     try {
       await adminApi.deletePost(post.id)
-      toast.success('帖子已删除')
       setPosts((prev) => prev.filter((p) => p.id !== post.id))
       setPostsTotal((t) => t - 1)
-    } catch {
-      toast.error('删除失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -163,11 +162,10 @@ export default function AdminContentPage() {
       return
     try {
       await adminApi.deleteComment(comment.id)
-      toast.success('评论已删除')
       setComments((prev) => prev.filter((c) => c.id !== comment.id))
       setCommentsTotal((t) => t - 1)
-    } catch {
-      toast.error('删除失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -184,11 +182,10 @@ export default function AdminContentPage() {
       return
     try {
       await adminApi.deleteReview(review.id)
-      toast.success('评价已删除')
       setReviews((prev) => prev.filter((r) => r.id !== review.id))
       setReviewsTotal((t) => t - 1)
-    } catch {
-      toast.error('删除失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -232,8 +229,8 @@ export default function AdminContentPage() {
       toast.success(`已隐藏 ${ids.length} 篇帖子`)
       setPosts((prev) => prev.map((p) => (selectedIds.has(p.id) ? { ...p, is_hidden: true } : p)))
       setSelectedIds(new Set())
-    } catch {
-      toast.error('批量操作部分失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setBatchLoading(false)
     }
@@ -259,8 +256,8 @@ export default function AdminContentPage() {
       setPosts((prev) => prev.filter((p) => !selectedIds.has(p.id)))
       setPostsTotal((t) => t - ids.length)
       setSelectedIds(new Set())
-    } catch {
-      toast.error('批量操作部分失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setBatchLoading(false)
     }

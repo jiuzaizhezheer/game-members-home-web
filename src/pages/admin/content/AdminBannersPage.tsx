@@ -71,8 +71,8 @@ export default function AdminBannersPage() {
       setIsLoading(true)
       const res = await adminApi.getBanners()
       setBanners(res.items)
-    } catch {
-      toast.error('获取轮播图失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setIsLoading(false)
     }
@@ -95,8 +95,8 @@ export default function AdminBannersPage() {
             const res = await categoryApi.getAll()
             setCategories(res)
           }
-        } catch {
-          toast.error('获取列表失败')
+        } catch (error) {
+          console.error(error)
         } finally {
           setIsHelperLoading(false)
         }
@@ -228,12 +228,11 @@ export default function AdminBannersPage() {
       const data = await res.json()
       if (data.data?.url) {
         setFormData((prev) => ({ ...prev, image_url: data.data.url }))
-        toast.success('图片已裁切并上传成功')
         setShowCropper(false)
         setTempImage(null)
       }
-    } catch {
-      toast.error('图片处理失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setIsCropping(false)
     }
@@ -242,7 +241,6 @@ export default function AdminBannersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.title || !formData.image_url) {
-      toast.error('请填写必填字段')
       return
     }
 
@@ -250,15 +248,13 @@ export default function AdminBannersPage() {
       setIsSubmitting(true)
       if (editingBanner) {
         await adminApi.updateBanner(editingBanner.id, formData)
-        toast.success('更新成功')
       } else {
         await adminApi.createBanner(formData)
-        toast.success('创建成功')
       }
       closeModal()
       fetchBanners()
-    } catch {
-      toast.error('保存失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setIsSubmitting(false)
     }
@@ -278,9 +274,8 @@ export default function AdminBannersPage() {
     try {
       await adminApi.deleteBanner(banner.id)
       setBanners((prev) => prev.filter((b) => b.id !== banner.id))
-      toast.success('删除成功')
-    } catch {
-      toast.error('删除失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -292,8 +287,8 @@ export default function AdminBannersPage() {
         prev.map((b) => (b.id === banner.id ? { ...b, is_active: newActive } : b)),
       )
       toast.success(newActive ? '已启用' : '已禁用')
-    } catch {
-      toast.error('操作失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 

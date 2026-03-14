@@ -11,7 +11,6 @@ import {
   ShoppingBag,
   AlertCircle,
 } from 'lucide-react'
-import { toast } from 'sonner'
 import { orderService } from '@/features/order/service'
 import type { OrderOut } from '@/features/order/types'
 import { getFileUrl } from '@/shared/utils/file'
@@ -73,13 +72,11 @@ export default function OrderListPage() {
     ) {
       try {
         await orderService.cancelOrder(order.id)
-        toast.success('订单已取消')
         setOrders((prev) =>
           prev.map((o) => (o.id === order.id ? { ...o, status: 'cancelled' } : o)),
         )
       } catch (error) {
         console.error('Failed to cancel order', error)
-        toast.error('取消订单失败')
       }
     }
   }
@@ -110,13 +107,11 @@ export default function OrderListPage() {
     ) {
       try {
         await orderService.receiptOrder(order.id)
-        toast.success('确认收货成功')
         setOrders((prev) =>
           prev.map((o) => (o.id === order.id ? { ...o, status: 'completed' } : o)),
         )
       } catch (error) {
         console.error(error)
-        toast.error('确认收货失败')
       }
     }
   }
@@ -128,7 +123,6 @@ export default function OrderListPage() {
       setTotal(totalCount)
     } catch (error) {
       console.error('Failed to fetch orders', error)
-      toast.error('加载订单列表失败')
     } finally {
       setLoading(false)
     }

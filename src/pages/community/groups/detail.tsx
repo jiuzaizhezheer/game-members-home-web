@@ -42,13 +42,12 @@ export default function GroupDetailPage() {
         }
       } else {
         await communityApi.joinGroup(group.id)
-        toast.success('加入成功')
         setGroup((prev) =>
           prev ? { ...prev, is_joined: true, member_count: prev.member_count + 1 } : null,
         )
       }
-    } catch {
-      toast.error('操作失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 

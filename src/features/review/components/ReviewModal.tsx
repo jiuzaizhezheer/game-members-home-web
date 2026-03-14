@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { reviewService } from '@/features/review/service'
 import type { ReviewCreateIn } from '@/features/review/types'
-import { toast } from 'sonner'
 import { getFileUrl } from '@/shared/utils/file'
 
 const reviewSchema = z.object({
@@ -71,12 +70,10 @@ export function ReviewModal({
       }
 
       await reviewService.createReview(payload)
-      toast.success('评价发表成功！')
       onSuccess()
       handleClose()
     } catch (error) {
       console.error('Failed to submit review:', error)
-      toast.error('发表评价失败，请重试')
     }
   }
 

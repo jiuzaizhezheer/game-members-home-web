@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Users, Store, Package, FileSearch, TrendingUp, Activity } from 'lucide-react'
-import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { adminApi } from '@/features/admin/api'
 import type { DashboardStats } from '@/features/admin/types'
@@ -66,8 +65,10 @@ function SparkLine({
 
 // ——— 根据总量生成过去 8 周的模拟趋势数据 ———
 function mockTrend(total: number, weeks = 8): number[] {
+  if (total <= 0) return new Array(weeks).fill(0)
+
   const result: number[] = []
-  let cur = Math.max(1, total - Math.round(total * 0.4))
+  let cur = Math.max(0, total - Math.round(total * 0.4))
   const finalStep = total - cur
   for (let i = 0; i < weeks; i++) {
     // 每周随机增长，最后一个点等于总量
@@ -76,7 +77,7 @@ function mockTrend(total: number, weeks = 8): number[] {
         ? Math.round((finalStep / (weeks - 1)) * (0.6 + Math.random() * 0.8))
         : total - cur
     cur += growth
-    result.push(Math.max(1, cur))
+    result.push(cur)
   }
   return result
 }
@@ -154,11 +155,10 @@ export default function AdminDashboard() {
       .then((s) => {
         setStats(s)
       })
-      .catch(() => toast.error('获取仪表盘数据失败'))
       .finally(() => setIsLoading(false))
   }, [])
 
-  const userTrend = stats ? mockTrend(stats.total_users) : []
+  const userTrend = stats ? mockTrend(stats.total_users + stats.total_merchants) : []
   const orderTrend = stats ? mockTrend(stats.total_orders) : []
 
   const statCards = [
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
     },
     {
       icon: Store,
-      label: '商家数量',
+      label: '总商家数',
       value: stats?.total_merchants ?? 0,
       iconBg: 'bg-teal-100',
       iconColor: 'text-teal-600',
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-800">仪表盘</h1>
-          <p className="mt-1 text-sm text-zinc-500">欢迎来到游戏会员之家管理后台</p>
+          <p className="mt-1 text-sm text-zinc-500">欢迎来到游戏周边交易系统管理后台</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-zinc-500">
           <Activity size={16} className="text-teal-500" />

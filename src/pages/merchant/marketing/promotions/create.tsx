@@ -3,8 +3,6 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ChevronLeft, Loader2, Search, CheckCircle2, X } from 'lucide-react'
-import { toast } from 'sonner'
-
 import { promotionApi } from '@/features/marketing/api'
 import { promotionCreateSchema, type PromotionCreateForm } from '@/features/marketing/schemas'
 import {
@@ -53,8 +51,8 @@ export default function PromotionCreatePage() {
     try {
       const res = await productApi.getMerchantList({ page: 1, page_size: 100 })
       setProducts(res.items)
-    } catch {
-      toast.error('加载商品失败')
+    } catch (error) {
+      console.error(error)
     }
   }, [])
 
@@ -81,7 +79,6 @@ export default function PromotionCreatePage() {
         data.products.map((p) => p.id),
       )
     } catch {
-      toast.error('加载活动详情失败')
       navigate('/merchant/marketing/promotions')
     } finally {
       setLoading(false)
@@ -106,15 +103,13 @@ export default function PromotionCreatePage() {
 
       if (isEdit) {
         await promotionApi.update(id!, payload)
-        toast.success('更新成功')
       } else {
         await promotionApi.create(payload)
-        toast.success('创建成功')
       }
       navigate('/merchant/marketing/promotions')
     } catch (error) {
       const err = error as { message?: string }
-      toast.error(err.message || '操作失败')
+      console.error(err.message ?? '创建活动失败')
     } finally {
       setSubmitting(false)
     }

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Plus, Loader2, MessageCircle, Image as ImageIcon, Trash2, Edit2 } from 'lucide-react'
-import { toast } from 'sonner'
 import { adminApi } from '@/features/admin/api'
 import { communityApi } from '@/features/community/api'
 import type { GroupItemOut, GroupCreateIn } from '@/features/community/types'
@@ -26,8 +25,8 @@ export default function AdminCommunityPage() {
     try {
       const res = await communityApi.getGroups(1, 100)
       setGroups(res.items)
-    } catch {
-      toast.error('加载话题圈失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -45,9 +44,8 @@ export default function AdminCommunityPage() {
     try {
       const { url } = await commonApi.uploadFile(file)
       setFormData((prev) => ({ ...prev, cover_image: url }))
-      toast.success('上传成功')
-    } catch {
-      toast.error('图片上传失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setUploading(false)
     }
@@ -60,14 +58,13 @@ export default function AdminCommunityPage() {
     setSubmitting(true)
     try {
       await adminApi.createCommunityGroup(formData)
-      toast.success('话题圈创建成功')
       setIsCreateModalOpen(false)
       setFormData({ name: '', description: '', cover_image: '' })
       fetchGroups()
     } catch (error) {
       const err = error as { response?: { data?: { message?: string } }; message?: string }
-      const errMsg = err.response?.data?.message || err.message || '创建失败'
-      toast.error(errMsg)
+      const message = err.response?.data?.message || err.message || '创建失败'
+      console.error(message)
     } finally {
       setSubmitting(false)
     }

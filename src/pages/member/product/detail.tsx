@@ -46,7 +46,6 @@ export default function ProductDetailPage() {
         setProduct(res)
       } catch (error) {
         console.error('Failed to fetch product detail', error)
-        toast.error('获取商品详情失败')
       } finally {
         setLoading(false)
       }
@@ -66,9 +65,7 @@ export default function ProductDetailPage() {
 
   const toggleFavorite = async () => {
     if (!authState.isAuthenticated) {
-      toast.error('请先登录', {
-        action: { label: '立即登录', onClick: () => navigate('/auth/login') },
-      })
+      toast.error('请先登录')
       return
     }
     if (!id) return
@@ -78,14 +75,12 @@ export default function ProductDetailPage() {
       if (isFavorited) {
         await favoriteService.remove(id)
         setIsFavorited(false)
-        toast.success('已取消收藏')
       } else {
         await favoriteService.add(id)
         setIsFavorited(true)
-        toast.success('已收藏')
       }
-    } catch {
-      toast.error('操作失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setFavLoading(false)
     }
@@ -93,34 +88,19 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (!authState.isAuthenticated) {
-      toast.error('请先登录', {
-        description: '您需要登录后才能将商品加入购物车',
-        action: {
-          label: '立即登录',
-          onClick: () => navigate('/auth/login'),
-        },
-      })
+      toast.error('请先登录')
       return
     }
-
     if (!product) return
 
     setAdding(true)
     try {
       await cartService.addItem({
         product_id: product.id,
-        quantity: quantity,
-      })
-      toast.success('已加入购物车', {
-        description: `已将 ${quantity} 件 ${product.name} 加入购物车`,
-        action: {
-          label: '前往购物车',
-          onClick: () => navigate('/member/cart'),
-        },
+        quantity,
       })
     } catch (error) {
       console.error('Failed to add item to cart', error)
-      toast.error(error instanceof Error ? error.message : '加入购物车失败')
     } finally {
       setAdding(false)
     }
@@ -128,7 +108,6 @@ export default function ProductDetailPage() {
 
   const [buyingNow, setBuyingNow] = useState(false)
 
-  // 计算最终价格
   const calculatePrice = () => {
     if (!product || !product.active_promotion) return product ? Number(product.price) : 0
 
@@ -148,23 +127,20 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = async () => {
     if (!authState.isAuthenticated) {
-      toast.error('请先登录', {
-        action: { label: '立即登录', onClick: () => navigate('/auth/login') },
-      })
+      toast.error('请先登录')
       return
     }
     if (!product) return
 
     setBuyingNow(true)
-    // 通过路由 state 传递商品信息到结算页，绕过购物车
     navigate('/member/checkout', {
       state: {
         buyNowItem: {
           product_id: product.id,
           product_name: product.name,
           product_image: product.image_url,
-          unit_price: finalPrice, // 使用计算后的优惠价格
-          quantity: quantity,
+          unit_price: finalPrice,
+          quantity,
         },
       },
     })
@@ -172,9 +148,7 @@ export default function ProductDetailPage() {
 
   const handleContactMerchant = () => {
     if (!authState.isAuthenticated) {
-      toast.error('请先登录', {
-        action: { label: '立即登录', onClick: () => navigate('/auth/login') },
-      })
+      toast.error('请先登录')
       return
     }
     if (!product) return
@@ -185,7 +159,7 @@ export default function ProductDetailPage() {
         refProduct: {
           id: product.id,
           name: product.name,
-          price: finalPrice, // 使用优惠价
+          price: finalPrice,
           image: product.image_url,
         },
       },

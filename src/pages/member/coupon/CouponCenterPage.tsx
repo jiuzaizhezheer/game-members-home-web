@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Ticket, Gift, Sparkles } from 'lucide-react'
-import { toast } from 'sonner'
 import { couponApi } from '@/features/marketing/api'
 import type { CouponOut } from '@/features/marketing/types'
 import CouponCard from '@/components/marketing/CouponCard'
@@ -16,8 +15,8 @@ const CouponCenterPage: React.FC = () => {
       setLoading(true)
       const res = await couponApi.getCenter()
       setCoupons(res)
-    } catch {
-      toast.error('获取优惠券列表失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -31,10 +30,8 @@ const CouponCenterPage: React.FC = () => {
     try {
       setClaimingId(couponId)
       await couponApi.claim(couponId)
-      toast.success('领取成功！请前往“我的优惠券”查看')
     } catch (error) {
-      const message = error instanceof Error ? error.message : '领取失败，请稍后再试'
-      toast.error(message)
+      console.error(error)
     } finally {
       setClaimingId(null)
     }

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Ticket, History } from 'lucide-react'
-import { toast } from 'sonner'
 import { couponApi } from '@/features/marketing/api'
 import type { UserCouponOut } from '@/features/marketing/types'
 import { cn } from '@/shared/utils/cn'
@@ -19,8 +18,8 @@ const MyCouponsPage: React.FC = () => {
       setLoading(true)
       const res = await couponApi.getMyCoupons({ status })
       setCoupons(res)
-    } catch {
-      toast.error('获取优惠券包失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }

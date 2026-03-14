@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Ticket, Plus, Search, Calendar, Loader2, Power, PowerOff, AlertCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { toast } from 'sonner'
 import { adminApi } from '@/features/admin/api'
 import type { AdminCouponItemOut } from '@/features/admin/types'
 import AdminCouponCreateModal from './AdminCouponCreateModal'
@@ -17,8 +16,8 @@ export default function AdminCouponListPage() {
       setIsLoading(true)
       const response = await adminApi.getCoupons()
       setCoupons(response?.items || [])
-    } catch {
-      toast.error('获取优惠券列表失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setIsLoading(false)
     }
@@ -35,10 +34,9 @@ export default function AdminCouponListPage() {
     if (coupon.status !== 'active') {
       try {
         await adminApi.updateCoupon(coupon.id, { status: 'active' })
-        toast.success('已重新上架')
         fetchCoupons()
-      } catch {
-        toast.error('操作失败')
+      } catch (error) {
+        console.error(error)
       }
       return
     }
@@ -54,11 +52,10 @@ export default function AdminCouponListPage() {
     // 已确认，执行停用
     try {
       await adminApi.updateCoupon(coupon.id, { status: 'inactive' })
-      toast.success('已成功下架并停用')
       setConfirmingId(null)
       fetchCoupons()
-    } catch {
-      toast.error('操作失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 

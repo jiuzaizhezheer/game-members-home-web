@@ -1,15 +1,27 @@
 import { useState, useEffect } from 'react'
-import { Calendar, User, Tag, ChevronLeft, ChevronRight, Loader2, Clock } from 'lucide-react'
-import { motion } from 'framer-motion'
+import {
+  Calendar,
+  User,
+  Tag,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Clock,
+  Eye,
+  X,
+  ClipboardCopy,
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
 import { adminApi } from '@/features/admin/api'
 import type { AdminLogItem } from '@/features/admin/types'
-import { toast } from 'sonner'
-
 /** 操作类型标签映射 */
 const ACTION_LABEL: Record<string, string> = {
   disable_user: '禁用用户',
   enable_user: '启用用户',
-  verify_merchant: '审核商家',
+  disable_merchant: '禁用商家',
+  enable_merchant: '启用商家',
+  verify_merchant: '店铺操作',
   force_offline_product: '强制下架商品',
   review_post: '审核帖子',
   delete_post: '删除帖子',
@@ -20,6 +32,7 @@ const ACTION_LABEL: Record<string, string> = {
 /** 目标类型颜色映射 */
 const TARGET_COLOR: Record<string, string> = {
   user: 'bg-blue-50 text-blue-600 border-blue-100',
+  admin: 'bg-slate-50 text-slate-600 border-slate-100',
   merchant: 'bg-amber-50 text-amber-600 border-amber-100',
   product: 'bg-rose-50 text-rose-600 border-rose-100',
   post: 'bg-indigo-50 text-indigo-600 border-indigo-100',
@@ -32,6 +45,7 @@ export default function AdminLogsPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedLog, setSelectedLog] = useState<AdminLogItem | null>(null)
   const pageSize = 15
 
   const fetchLogs = async () => {
@@ -41,7 +55,6 @@ export default function AdminLogsPage() {
       setLogs(res.items)
       setTotal(res.total)
     } catch (error) {
-      toast.error('获取日志失败')
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -101,7 +114,8 @@ export default function AdminLogsPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     key={log.id}
-                    className="group transition-colors hover:bg-zinc-50/50"
+                    onClick={() => setSelectedLog(log)}
+                    className="group cursor-pointer transition-colors hover:bg-zinc-50/50"
                   >
                     <td className="whitespace-nowrap px-6 py-4 transition-colors group-hover:text-zinc-900">
                       <div className="flex items-center gap-2 text-zinc-500">
@@ -129,17 +143,23 @@ export default function AdminLogsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div
-                        className="max-w-[300px] truncate text-zinc-600"
-                        title={JSON.stringify(log.detail)}
-                      >
-                        {log.detail ? (
-                          Object.entries(log.detail)
-                            .map(([k, v]) => `${k}: ${v}`)
-                            .join(', ')
-                        ) : (
-                          <span className="text-zinc-300">无详情内容</span>
-                        )}
+                      <div className="flex items-center justify-between gap-4">
+                        <div
+                          className="max-w-[240px] truncate text-zinc-600"
+                          title={JSON.stringify(log.detail)}
+                        >
+                          {log.detail ? (
+                            Object.entries(log.detail)
+                              .map(([k, v]) => `${k}: ${v}`)
+                              .join(', ')
+                          ) : (
+                            <span className="text-zinc-300">无详情内容</span>
+                          )}
+                        </div>
+                        <Eye
+                          size={16}
+                          className="text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100"
+                        />
                       </div>
                     </td>
                   </motion.tr>
@@ -177,6 +197,132 @@ export default function AdminLogsPage() {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {selectedLog && <LogDetailModal log={selectedLog} onClose={() => setSelectedLog(null)} />}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function LogDetailModal({ log, onClose }: { log: AdminLogItem; onClose: () => void }) {
+  const handleCopy = () => {
+    navigator.clipboard.writeText(JSON.stringify(log, null, 2))
+    toast.success('已复制到剪贴板')
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-zinc-950/20 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-zinc-200"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 text-zinc-900 border border-zinc-100">
+              <Eye size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-zinc-900">日志详情</h3>
+              <p className="text-xs text-zinc-500">ID: {log.id}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopy}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+              title="复制 JSON"
+            >
+              <ClipboardCopy size={18} />
+            </button>
+            <button
+              onClick={onClose}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="max-h-[70vh] overflow-y-auto p-6 scrollbar-hide">
+          <div className="grid gap-6">
+            {/* Metadata Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  操作类型
+                </span>
+                <p className="mt-1 text-sm font-semibold text-zinc-900">
+                  {ACTION_LABEL[log.action] || log.action}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  管理员 ID
+                </span>
+                <p className="mt-1 font-mono text-xs font-semibold text-zinc-900">{log.admin_id}</p>
+              </div>
+              <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  操作时间
+                </span>
+                <p className="mt-1 text-sm font-semibold text-zinc-900">
+                  {new Date(log.created_at).toLocaleString()}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  目标类型
+                </span>
+                <p className="mt-1 text-sm font-semibold text-zinc-900">
+                  {log.target_type.toUpperCase()}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  目标 ID
+                </span>
+                <p className="mt-1 font-mono text-xs font-semibold text-zinc-900">
+                  {log.target_id}
+                </p>
+              </div>
+            </div>
+
+            {/* JSON Detail */}
+            <div>
+              <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-1">
+                详细返回信息 (JSON Detail)
+              </span>
+              <div className="rounded-2xl border border-zinc-100 bg-zinc-950 p-4">
+                <pre className="overflow-x-auto font-mono text-sm text-zinc-300 leading-relaxed">
+                  {JSON.stringify(log.detail, null, 2)}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="bg-zinc-50 px-6 py-4">
+          <button
+            onClick={onClose}
+            className="w-full rounded-2xl bg-zinc-900 py-3 text-sm font-bold text-white transition-all hover:bg-zinc-800 active:scale-[0.98]"
+          >
+            关闭详情
+          </button>
+        </div>
+      </motion.div>
     </div>
   )
 }

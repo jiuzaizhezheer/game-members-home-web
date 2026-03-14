@@ -6,7 +6,7 @@ export default function WelcomePage() {
   const navigate = useNavigate()
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-white text-zinc-900 selection:bg-indigo-100">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-zinc-50/50 text-zinc-900 selection:bg-indigo-500/10">
       {/* Background Decor */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-[10%] top-[20%] h-[500px] w-[500px] rounded-full bg-indigo-500/5 blur-[100px]" />
@@ -20,9 +20,9 @@ export default function WelcomePage() {
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, type: 'spring' }}
-          className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-50 to-white shadow-xl shadow-indigo-100 ring-1 ring-indigo-50"
+          className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-50 to-zinc-50 shadow-xl shadow-indigo-500/5 ring-1 ring-indigo-500/10"
         >
-          <Gamepad2 className="h-10 w-10 text-indigo-600" />
+          <Gamepad2 className="h-10 w-10 text-indigo-500" />
         </motion.div>
 
         {/* Headline */}
@@ -33,15 +33,15 @@ export default function WelcomePage() {
         >
           <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium text-zinc-600">
             <Sparkles size={20} className="text-amber-500" />
-            <span>全新一代游戏会员平台</span>
+            <span>全新一代游戏周边交易平台</span>
           </span>
           <h1 className="bg-linear-to-b from-zinc-900 to-zinc-600 bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-7xl">
             游戏生活，
             <br className="hidden sm:block" />
-            <span className="text-indigo-600">触手可及</span>
+            <span className="text-indigo-500">触手可及</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-zinc-500">
-            连接玩家与优质游戏服务的桥梁。在这里，发现属于你的游戏特权，体验极致的会员服务，开启无限可能。
+            连接玩家与优质游戏服务的桥梁。在这里，发现属于你的游戏特长，体验极致的游戏服务，开启无限可能。
           </p>
         </motion.div>
 
@@ -58,12 +58,6 @@ export default function WelcomePage() {
           >
             立即探索
             <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
-          </button>
-          <button
-            onClick={() => navigate('/intro')}
-            className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-base font-semibold text-zinc-600 shadow-sm ring-1 ring-zinc-200 transition-all hover:bg-zinc-50 hover:text-zinc-900 hover:ring-zinc-300"
-          >
-            了解更多
           </button>
         </motion.div>
 

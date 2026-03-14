@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { toast } from 'sonner'
 import { Store, Phone, FileText, Save, Loader2, Camera } from 'lucide-react'
 
 import { commonApi } from '@/features/common/api'
@@ -43,7 +42,6 @@ export default function MerchantSettings() {
         })
       } catch (error) {
         console.error(error)
-        toast.error('加载店铺信息失败')
       } finally {
         setIsLoading(false)
       }
@@ -62,10 +60,8 @@ export default function MerchantSettings() {
       // 处理相对路径，如果是以 / 开头且没有协议，拼接完整的 API 地址（或者让前端全局处理）
       // 这里暂时存储原始返回的 URL，假设后端静态资源已挂载
       form.setValue('logo_url', url, { shouldDirty: true })
-      toast.success('Logo 上传成功')
     } catch (error) {
       console.error(error)
-      toast.error('上传失败')
     } finally {
       setIsUploading(false)
     }
@@ -75,11 +71,9 @@ export default function MerchantSettings() {
     setIsSubmitting(true)
     try {
       await merchantService.update(merchantId, data)
-      toast.success('店铺信息更新成功')
       form.reset(data) // 重置 dirty 状态
     } catch (error) {
       console.error(error)
-      toast.error('保存失败')
     } finally {
       setIsSubmitting(false)
     }

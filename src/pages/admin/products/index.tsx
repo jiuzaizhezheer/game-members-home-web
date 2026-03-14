@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Package, Search, Filter, Eye, PackageSearch, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { adminApi } from '@/features/admin/api'
 import type { AdminProductItem } from '@/features/admin/types'
@@ -33,8 +32,8 @@ export default function AdminProductsPage() {
       })
       setProducts(res.items)
       setTotal(res.total)
-    } catch {
-      toast.error('获取商品列表失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -59,10 +58,9 @@ export default function AdminProductsPage() {
 
     try {
       await adminApi.forceOfflineProduct(product.id)
-      toast.success('已强制下架')
       setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, status: 'off' } : p)))
-    } catch {
-      toast.error('操作失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 

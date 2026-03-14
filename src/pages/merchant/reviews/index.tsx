@@ -25,7 +25,6 @@ export default function MerchantReviewPage() {
       setData(res)
     } catch (error) {
       console.error('Failed to fetch merchant reviews:', error)
-      toast.error('加载评价记录失败')
     } finally {
       setLoading(false)
     }
@@ -44,14 +43,12 @@ export default function MerchantReviewPage() {
     setSubmittingReply(true)
     try {
       await reviewService.replyReview(reviewId, { merchant_reply: replyContent })
-      toast.success('回复成功')
       setReplyingId(null)
       setReplyContent('')
       // Refresh list to show reply
       fetchReviews(page)
     } catch (error) {
       console.error('Failed to reply to review:', error)
-      toast.error('回复失败，请重试')
     } finally {
       setSubmittingReply(false)
     }
