@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { toast } from 'sonner'
 import { User, Mail, Camera, Save, Loader2, Shield, KeyRound } from 'lucide-react'
 
 import { userService } from '@/features/user/service'
@@ -40,8 +39,8 @@ export default function MerchantAccount() {
           avatar_url: data.avatar_url || '',
           email: data.email || '',
         })
-      } catch {
-        toast.error('加载个人信息失败')
+      } catch (error) {
+        console.error(error)
       } finally {
         setLoading(false)
       }
@@ -57,9 +56,8 @@ export default function MerchantAccount() {
     try {
       const { url } = await commonApi.uploadFile(file)
       profileForm.setValue('avatar_url', url, { shouldDirty: true })
-      toast.success('头像上传成功，请点击保存')
-    } catch {
-      toast.error('上传失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setIsUploading(false)
     }
@@ -75,9 +73,8 @@ export default function MerchantAccount() {
         avatar_url: updated.avatar_url,
       })
       profileForm.reset(data)
-      toast.success('个人资料已更新')
-    } catch {
-      toast.error('更新失败，请稍后重试')
+    } catch (error) {
+      console.error(error)
     } finally {
       setUpdating(false)
     }

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, TicketPercent, Loader2, ArrowRight, Edit, Trash2, Calendar } from 'lucide-react'
-import { toast } from 'sonner'
-
 import { promotionApi } from '@/features/marketing/api'
 import type { PromotionOut } from '@/features/marketing/types'
 import { PROMOTION_STATUS, DISCOUNT_TYPES } from '@/features/marketing/constants'
@@ -22,8 +20,8 @@ export default function PromotionListPage() {
     try {
       const res = await promotionApi.list({ page: 1, page_size: 100 })
       setPromotions(res.items)
-    } catch {
-      toast.error('获取促销活动失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -34,10 +32,9 @@ export default function PromotionListPage() {
     if (!confirm('确定要删除这个活动吗？')) return
     try {
       await promotionApi.delete(id)
-      toast.success('删除成功')
       fetchPromotions()
-    } catch {
-      toast.error('删除失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 

@@ -19,12 +19,14 @@ export const communityApi = {
     })
     return requestJson<GroupListOut>(`/communities/groups?${params.toString()}`, {
       method: 'GET',
+      auth: false,
     })
   },
 
   getGroupDetail: async (groupId: string) => {
     return requestJson<GroupDetailOut>(`/communities/groups/${groupId}`, {
       method: 'GET',
+      auth: false,
     })
   },
 
@@ -48,12 +50,14 @@ export const communityApi = {
     })
     return requestJson<PostListOut>(`/communities/groups/${groupId}/posts?${params.toString()}`, {
       method: 'GET',
+      auth: false,
     })
   },
 
   getPostDetail: async (postId: string) => {
     return requestJson<PostDetailOut>(`/communities/posts/${postId}`, {
       method: 'GET',
+      auth: false,
     })
   },
 
@@ -89,6 +93,7 @@ export const communityApi = {
     })
     return requestJson<PostListOut>(`/communities/search?${params.toString()}`, {
       method: 'GET',
+      auth: false,
     })
   },
 
@@ -102,6 +107,7 @@ export const communityApi = {
       `/communities/posts/${postId}/comments?${params.toString()}`,
       {
         method: 'GET',
+        auth: false,
       },
     )
   },

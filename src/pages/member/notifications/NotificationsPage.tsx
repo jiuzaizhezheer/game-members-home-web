@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCheck, Package, Flame, Target, Loader2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { toast } from 'sonner'
-
 import { notificationApi } from '@/features/notification/api'
 import type { SystemNotification } from '@/features/notification/types'
 
@@ -27,7 +25,6 @@ export default function NotificationsPage() {
       setHasMore(res.items.length === 20)
     } catch (error) {
       console.error('Failed to load notifications', error)
-      toast.error('加载通知失败')
     } finally {
       setIsLoading(false)
     }
@@ -50,7 +47,6 @@ export default function NotificationsPage() {
     try {
       await notificationApi.markAllAsRead()
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
-      toast.success('已全部标记为已读')
     } catch (error) {
       console.error('Failed to mark all as read', error)
     }

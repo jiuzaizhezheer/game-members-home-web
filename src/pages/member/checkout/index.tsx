@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Ticket,
 } from 'lucide-react'
-import { toast } from 'sonner'
 import { addressService } from '@/features/address/service'
 import type { AddressOut } from '@/features/address/types'
 import { cartService } from '@/features/cart/service'
@@ -87,7 +86,6 @@ export default function CheckoutPage() {
         setCart(cartData)
 
         if (!cartData || cartData.items.length === 0) {
-          toast.error('购物车是空的')
           navigate('/member/cart')
           return
         }
@@ -109,7 +107,6 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error('Failed to fetch checkout data', error)
-      toast.error('加载结算数据失败')
     } finally {
       setLoading(false)
     }
@@ -190,7 +187,6 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
-      toast.error('请选择收货地址')
       return
     }
 
@@ -225,7 +221,6 @@ export default function CheckoutPage() {
       setIsPaymentModalOpen(true)
     } catch (error) {
       console.error('Failed to place order', error)
-      toast.error(error instanceof Error ? error.message : '下单失败')
     } finally {
       setSubmitting(false)
     }

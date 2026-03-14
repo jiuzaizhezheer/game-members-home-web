@@ -3,8 +3,6 @@ import type {
   AdminProfileOut,
   AdminUserItemOut,
   AdminUserListOut,
-  AdminMerchantItemOut,
-  AdminMerchantListOut,
   AdminProductListOut,
   AdminPostListOut,
   AdminCommentListOut,
@@ -140,36 +138,6 @@ export const adminApi = {
   /** 启用用户 */
   async enableUser(id: string): Promise<void> {
     await requestJson<void>(`/admins/users/${id}/enable`, { method: 'PATCH' })
-  },
-
-  // --- 商家管理 ---
-
-  /** 获取商家列表 */
-  async getMerchants(params?: {
-    page?: number
-    page_size?: number
-    keyword?: string
-  }): Promise<AdminMerchantListOut> {
-    const query = new URLSearchParams()
-    if (params?.page) query.set('page', String(params.page))
-    if (params?.page_size) query.set('page_size', String(params.page_size))
-    if (params?.keyword) query.set('keyword', params.keyword)
-    const qs = query.toString()
-    return await requestJson<AdminMerchantListOut>(`/admins/merchants/${qs ? `?${qs}` : ''}`, {
-      method: 'GET',
-    })
-  },
-
-  /** 获取商家详情 */
-  async getMerchantDetail(id: string): Promise<AdminMerchantItemOut> {
-    return await requestJson<AdminMerchantItemOut>(`/admins/merchants/${id}`, { method: 'GET' })
-  },
-
-  /** 审核商家（启用/禁用） */
-  async verifyMerchant(id: string, is_active: boolean): Promise<void> {
-    await requestJson<void>(`/admins/merchants/${id}/verify?is_active=${is_active}`, {
-      method: 'PATCH',
-    })
   },
 
   // --- 商品管理 ---

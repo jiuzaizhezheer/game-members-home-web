@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Package,
@@ -35,7 +35,20 @@ export default function MerchantLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const { logout } = useAuth()
+  const { logout, state } = useAuth()
+
+  // 1. 如果正在初始化，渲染加载态
+  if (state.isInitializing) return null
+
+  // 2. 如果未登录，重定向到登录页
+  if (!state.isAuthenticated) {
+    return <Navigate to="/auth/login?role=merchant" replace />
+  }
+
+  // 3. 如果已登录但角色不是 merchant，重定向到对应角色的首页
+  if (state.user && state.user.role !== 'merchant') {
+    return <Navigate to={`/${state.user.role}`} replace />
+  }
 
   const handleLogout = async () => {
     await logout()

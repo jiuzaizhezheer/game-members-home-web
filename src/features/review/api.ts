@@ -20,6 +20,7 @@ export const reviewApi = {
       `/reviews/products/${productId}?page=${page}&page_size=${pageSize}`,
       {
         method: 'GET',
+        auth: false,
       },
     )
   },

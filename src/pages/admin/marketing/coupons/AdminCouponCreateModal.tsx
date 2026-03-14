@@ -1,8 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { X, Loader2, PartyPopper } from 'lucide-react'
+import { X, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { toast } from 'sonner'
 import { adminApi } from '@/features/admin/api'
 import { CouponCreateInSchema, type CouponCreateIn } from '@/features/marketing/types'
 
@@ -42,15 +41,11 @@ export default function AdminCouponCreateModal({ isOpen, onClose, onSuccess }: P
         end_at: new Date(data.end_at).toISOString(),
       }
       await adminApi.createCoupon(payload)
-      toast.success('官方优惠券已发布！', {
-        icon: <PartyPopper className="text-rose-500" />,
-      })
       reset()
       onSuccess()
       onClose()
     } catch (error) {
-      const message = error instanceof Error ? error.message : '发布失败'
-      toast.error(message)
+      console.error(error)
     }
   }
 

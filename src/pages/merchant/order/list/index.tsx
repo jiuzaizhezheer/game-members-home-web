@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from 'react'
-import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { Package, PackageX, Truck, CheckCircle2, AlertCircle, Clock } from 'lucide-react'
 
@@ -117,7 +116,6 @@ export default function MerchantOrderList() {
       setOrders(res.items || [])
     } catch (error) {
       console.error('Failed to fetch orders', error)
-      toast.error('加载订单失败')
     } finally {
       setLoading(false)
     }
@@ -137,13 +135,11 @@ export default function MerchantOrderList() {
     if (!selectedOrder) return
     try {
       await merchantService.shipOrder(selectedOrder.id, data)
-      toast.success('发货成功')
       setOrders((prev) =>
         prev.map((o) => (o.id === selectedOrder.id ? { ...o, status: 'shipped', ...data } : o)),
       )
     } catch (error) {
       console.error('Ship order failed', error)
-      toast.error('发货失败')
       throw error // Let the modal handles isSubmitting
     }
   }
@@ -163,15 +159,12 @@ export default function MerchantOrderList() {
       // We will need to fetch the refund detail to get the refund ID first.
       const detail = await orderApi.getRefundDetail(selectedOrder.id).catch(() => null)
       if (!detail) {
-        toast.error('找不到关联的退款记录')
         return
       }
       await merchantApi.auditRefund(detail.id, { status, merchant_reply })
-      toast.success('审批完成')
       fetchOrders() // Refresh the list
     } catch (error) {
       console.error('Audit failed', error)
-      toast.error('审批操作失败')
       throw error
     }
   }

@@ -13,7 +13,6 @@ import {
   Shield,
   ChevronRight,
 } from 'lucide-react'
-import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { adminApi } from '@/features/admin/api'
 import type { AdminUserItemOut } from '@/features/admin/types'
@@ -27,7 +26,7 @@ const RoleBadge = ({ role }: { role: string }) => {
     merchant: 'bg-indigo-50 text-indigo-600 ring-indigo-500/20',
     member: 'bg-teal-50 text-teal-600 ring-teal-500/20',
   }
-  const labels: Record<string, string> = { admin: '管理员', merchant: '商家', member: '会员' }
+  const labels: Record<string, string> = { admin: '管理员', merchant: '商家', member: '普通用户' }
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${styles[role] ?? styles.member}`}
@@ -192,8 +191,8 @@ export default function AdminUsersPage() {
       })
       setUsers(res.items)
       setTotal(res.total)
-    } catch {
-      toast.error('获取用户列表失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -222,12 +221,11 @@ export default function AdminUsersPage() {
       } else {
         await adminApi.enableUser(user.id)
       }
-      toast.success(`${action}成功`)
       const updated = { ...user, is_active: !user.is_active }
       setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)))
       if (selectedUser?.id === user.id) setSelectedUser(updated)
-    } catch {
-      toast.error(`${action}失败`)
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -277,7 +275,7 @@ export default function AdminUsersPage() {
               className="h-10 appearance-none rounded-xl border border-zinc-200 bg-white pl-4 pr-9 text-sm font-medium text-zinc-700 outline-none transition-all focus:border-indigo-500 hover:border-zinc-300"
             >
               <option value="">全部角色</option>
-              <option value="member">会员</option>
+              <option value="member">普通用户</option>
               <option value="merchant">商家</option>
               <option value="admin">管理员</option>
             </select>

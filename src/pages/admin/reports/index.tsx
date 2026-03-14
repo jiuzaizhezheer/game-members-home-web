@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle2, ChevronLeft, ChevronRight, Eye, Flag, Loader2, X } from 'lucide-react'
-import { toast } from 'sonner'
-
 import { adminApi } from '@/features/admin/api'
 import type {
   AdminReportDetailOut,
@@ -58,8 +56,8 @@ export default function AdminReportsPage() {
       })
       setItems(res.items)
       setTotal(res.total)
-    } catch {
-      toast.error('获取举报列表失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -77,8 +75,8 @@ export default function AdminReportsPage() {
     try {
       const res = await adminApi.getReportDetail(reportId)
       setDetail(res)
-    } catch {
-      toast.error('获取举报详情失败')
+    } catch (error) {
+      console.error(error)
       setDetailOpen(false)
     } finally {
       setDetailLoading(false)
@@ -91,11 +89,10 @@ export default function AdminReportsPage() {
     setHandling(true)
     try {
       await adminApi.handleReport(detail.report.id, payload)
-      toast.success('处理成功')
       setDetailOpen(false)
       await fetchList()
-    } catch {
-      toast.error('处理失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setHandling(false)
     }

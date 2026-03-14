@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Users,
-  Store,
   Package,
   FolderTree,
   FileSearch,
@@ -23,16 +22,10 @@ import { useAuth } from '@/contexts/AuthContext'
 
 /**
  * 管理后台侧边栏菜单项
- * - 仪表盘（当前可用）
- * - 用户管理（后续扩展）
- * - 商家管理（后续扩展）
- * - 商品管理（后续扩展）
- * - 内容审核
  */
 const SIDEBAR_ITEMS = [
   { icon: LayoutDashboard, label: '仪表盘', path: '/admin/dashboard' },
   { icon: Users, label: '用户管理', path: '/admin/users' },
-  { icon: Store, label: '商家管理', path: '/admin/merchants' },
   { icon: Package, label: '商品管理', path: '/admin/products' },
   { icon: FolderTree, label: '分类管理', path: '/admin/categories' },
   { icon: MessageCircle, label: '社群管理', path: '/admin/community' },
@@ -49,7 +42,20 @@ export default function AdminLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const { logout } = useAuth()
+  const { logout, state } = useAuth()
+
+  // 1. 如果正在初始化，渲染加载态
+  if (state.isInitializing) return null
+
+  // 2. 如果未登录，重定向到登录页
+  if (!state.isAuthenticated) {
+    return <Navigate to="/auth/login?role=admin" replace />
+  }
+
+  // 3. 如果已登录但角色不是 admin，重定向到对应角色的首页
+  if (state.user && state.user.role !== 'admin') {
+    return <Navigate to={`/${state.user.role}`} replace />
+  }
 
   const handleLogout = async () => {
     await logout()

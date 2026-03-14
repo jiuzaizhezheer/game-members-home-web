@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { toast } from 'sonner'
 import { Flag, Loader2, Upload, X } from 'lucide-react'
 
 import { commonApi } from '@/features/common/api'
@@ -60,8 +59,8 @@ export default function ReportModal({
     try {
       const { url } = await commonApi.uploadFile(file)
       setEvidenceUrls((prev) => (prev.includes(url) ? prev : [...prev, url]))
-    } catch {
-      toast.error('图片上传失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setUploading(false)
     }
@@ -78,10 +77,9 @@ export default function ReportModal({
         description: description.trim() ? description.trim() : null,
         evidence_urls: evidenceUrls,
       })
-      toast.success('举报已提交')
       handleClose()
-    } catch {
-      toast.error('举报提交失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setSubmitting(false)
     }

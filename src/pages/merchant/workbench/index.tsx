@@ -11,7 +11,6 @@ import {
   PackageSearch,
   Trophy,
 } from 'lucide-react'
-import { toast } from 'sonner'
 import {
   LineChart,
   Line,
@@ -66,7 +65,6 @@ export default function MerchantWorkbench() {
         setRecentProducts(productsRes.items)
       } catch (error) {
         console.error(error)
-        toast.error('加载工作台数据失败')
       } finally {
         setLoading(false)
       }

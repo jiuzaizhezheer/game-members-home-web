@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Trash2, Edit2, Star, Loader2, ArrowLeft, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { addressService } from '@/features/address/service'
@@ -41,7 +40,6 @@ export default function AddressListPage() {
       setAddresses(data)
     } catch (error) {
       console.error('Failed to fetch addresses', error)
-      toast.error('加载地址失败')
     } finally {
       setLoading(false)
     }
@@ -56,17 +54,15 @@ export default function AddressListPage() {
     try {
       if (editingId) {
         await addressService.updateAddress(editingId, data)
-        toast.success('更新成功')
       } else {
         await addressService.addAddress(data)
-        toast.success('添加成功')
       }
       setIsFormOpen(false)
       setEditingId(null)
       reset()
       await fetchAddresses()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '操作失败')
+      console.error(error)
     } finally {
       setSubmitting(false)
     }
@@ -95,10 +91,9 @@ export default function AddressListPage() {
     if (!confirmed) return
     try {
       await addressService.deleteAddress(id)
-      toast.success('已删除')
       await fetchAddresses()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '删除失败')
+      console.error(error)
     }
   }
 
@@ -106,10 +101,9 @@ export default function AddressListPage() {
     if (addr.is_default) return
     try {
       await addressService.setDefault(addr.id)
-      toast.success('默认地址已更改')
       await fetchAddresses()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '设置失败')
+      console.error(error)
     }
   }
 

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart, Trash2, Loader2, PackageSearch, CheckSquare, Square, XCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { toast } from 'sonner'
 import { favoriteService } from '@/features/favorite/service'
 import type { FavoriteItemOut } from '@/features/favorite/types'
 import { getFileUrl } from '@/shared/utils/file'
@@ -25,8 +24,8 @@ export default function FavoritesPage() {
         const res = await favoriteService.getList(p, pageSize)
         setItems(res.items)
         setTotal(res.total)
-      } catch {
-        toast.error('获取收藏列表失败')
+      } catch (error) {
+        console.error(error)
       } finally {
         setLoading(false)
       }
@@ -67,10 +66,9 @@ export default function FavoritesPage() {
 
     try {
       await favoriteService.remove(productId)
-      toast.success('已取消收藏')
       fetchFavorites()
-    } catch {
-      toast.error('操作失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -89,11 +87,10 @@ export default function FavoritesPage() {
     setRemoving(true)
     try {
       await favoriteService.removeBatch(Array.from(selectedIds))
-      toast.success(`已取消收藏 ${selectedIds.size} 件商品`)
       setSelectedIds(new Set())
       fetchFavorites()
-    } catch {
-      toast.error('操作失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setRemoving(false)
     }

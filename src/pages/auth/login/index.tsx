@@ -1,8 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Mail, Lock, ChevronDown, ChevronUp, Check, Eye, EyeOff } from 'lucide-react'
 import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 
 import { type AuthLoginIn, type Role } from '@/features/auth/types'
 import { authService } from '@/features/auth/service'
@@ -17,6 +16,8 @@ export default function HomePage() {
   /** 导航 */
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
+  const registerState = location.state as { email?: string; password?: string } | null
   const { refreshFromStorage, state } = useAuth()
 
   // 如果已登录，自动跳转到对应角色主页
@@ -43,8 +44,8 @@ export default function HomePage() {
     formState: { errors, isSubmitting },
   } = useForm<AuthLoginIn>({
     defaultValues: {
-      email: '',
-      password: '',
+      email: registerState?.email || '',
+      password: registerState?.password || '',
       role: defaultRole,
     },
   })
@@ -71,12 +72,10 @@ export default function HomePage() {
     try {
       await authService.login(data)
       await refreshFromStorage()
-      toast.success('登录成功')
       // 根据用户角色跳转到不同的路由 (如 /member, /merchant, /admin)
       navigate(`/${data.role}`)
     } catch (err) {
       console.error('Login failed:', err)
-      toast.error('登录失败，请检查账号密码')
     }
   }
 
@@ -84,7 +83,9 @@ export default function HomePage() {
     <div>
       {/* 卡片上方的欢迎标题 */}
       <div className="mb-5 text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">欢迎来到游戏会员之家</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
+          欢迎来到游戏周边交易系统
+        </h1>
       </div>
 
       {/* 登录卡片主体 */}
@@ -242,14 +243,6 @@ export default function HomePage() {
                 className="h-12 w-full rounded-full border border-transparent bg-zinc-100 text-base font-semibold text-zinc-600 transition-all hover:bg-zinc-200 hover:text-zinc-900"
               >
                 暂无账号 去注册
-              </button>
-            </div>
-
-            {/* 底部辅助链接 */}
-            <div className="text-center text-sm">
-              <span className="text-zinc-500">忘记密码？</span>{' '}
-              <button type="button" className="font-semibold text-indigo-600 hover:underline">
-                点击找回
               </button>
             </div>
           </form>

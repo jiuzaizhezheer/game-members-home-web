@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { toast } from 'sonner'
 import { KeyRound, Eye, EyeOff, X, AlertCircle, Shield } from 'lucide-react'
 
 import { userService } from '@/features/user/service'
@@ -38,10 +37,9 @@ export default function ChangePasswordModal({ open, onClose }: ChangePasswordMod
     try {
       setLoading(true)
       await userService.changePassword(data)
-      toast.success('密码修改成功')
       handleClose()
-    } catch {
-      toast.error('密码修改失败，请检查旧密码是否正确')
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }

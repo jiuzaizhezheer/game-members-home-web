@@ -12,7 +12,6 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useConfirm } from '@/components/ui/confirmContext'
-import { toast } from 'sonner'
 import { productService } from '@/features/product/service'
 import type { ProductOut, ProductListIn } from '@/features/product/types'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -52,7 +51,6 @@ export default function ProductList() {
       setTotal(res.total)
     } catch (err) {
       console.error(err)
-      toast.error('获取商品列表失败')
     } finally {
       setLoading(false)
     }
@@ -74,13 +72,12 @@ export default function ProductList() {
     const newStatus = product.status === 'on' ? 'off' : 'on'
     try {
       await productService.updateStatus(product.id, { status: newStatus })
-      toast.success(newStatus === 'on' ? '商品已上架' : '商品已下架')
       // 乐观更新 UI
       setProducts((prev) =>
         prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p)),
       )
-    } catch {
-      toast.error('操作失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -97,13 +94,11 @@ export default function ProductList() {
     ) {
       try {
         await productService.delete(product.id)
-        toast.success('删除成功')
         // 乐观更新
         setProducts((prev) => prev.filter((p) => p.id !== product.id))
         setTotal((prev) => prev - 1)
       } catch (err) {
         console.error(err)
-        toast.error('删除失败')
       }
     }
   }
@@ -135,7 +130,7 @@ export default function ProductList() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
-            placeholder="搜索商品名称、SKU..."
+            placeholder="搜索商品名称..."
             value={queryParams.keyword || ''}
             onChange={(e) => setQueryParams({ ...queryParams, keyword: e.target.value, page: 1 })}
             className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-2.5 pl-10 pr-4 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
@@ -240,9 +235,6 @@ export default function ProductList() {
                           <div className="font-medium text-zinc-900 line-clamp-1">
                             {product.name}
                           </div>
-                          {product.sku && (
-                            <div className="text-xs text-zinc-400">SKU: {product.sku}</div>
-                          )}
                         </div>
                       </div>
                     </td>

@@ -203,7 +203,6 @@ export default function PostDetailPage() {
       await communityApi.toggleLike(post.id, 'post')
     } catch {
       // Revert if failed
-      toast.error('操作失败')
       setPost((prev) =>
         prev
           ? {
@@ -232,8 +231,8 @@ export default function PostDetailPage() {
         }),
       )
       await communityApi.toggleLike(commentId, 'comment')
-    } catch {
-      toast.error('操作失败')
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -244,7 +243,6 @@ export default function PostDetailPage() {
 
   const handleReportComment = (comment: CommentItemOut) => {
     if (!state.isAuthenticated) {
-      toast.error('请先登录')
       return
     }
     setReportTarget({ type: 'comment', id: comment.id })
@@ -261,15 +259,14 @@ export default function PostDetailPage() {
       })
       setCommentContent('')
       setReplyingTo(null)
-      toast.success('评论成功')
 
       // Refresh comments to get correct data (including reply_to_username)
       communityApi.getPostComments(post.id).then((res) => setComments(res.items))
 
       // Update post comment count
       setPost((prev) => (prev ? { ...prev, comment_count: prev.comment_count + 1 } : null))
-    } catch {
-      toast.error('评论失败')
+    } catch (error) {
+      console.error(error)
     } finally {
       setSubmitting(false)
     }

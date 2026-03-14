@@ -76,7 +76,6 @@ export default function OrderDetailPage() {
         }
       }
     } catch (error) {
-      toast.error('获取订单详情失败')
       console.error(error)
     } finally {
       setLoading(false)
@@ -93,11 +92,9 @@ export default function OrderDetailPage() {
     if (!order) return
     try {
       await orderService.applyRefund(order.id, { reason })
-      toast.success('售后申请已提交，请等待商家处理')
       fetchOrderDetail(order.id)
     } catch (error) {
       console.error('Failed to apply refund', error)
-      toast.error('申请失败')
       throw error
     }
   }
@@ -122,12 +119,10 @@ export default function OrderDetailPage() {
     ) {
       try {
         await orderService.cancelOrder(order.id)
-        toast.success('订单已取消')
         // 刷新详情
         fetchOrderDetail(order.id)
       } catch (error) {
         console.error('Failed to cancel order', error)
-        toast.error('取消订单失败')
       }
     }
   }
@@ -154,11 +149,9 @@ export default function OrderDetailPage() {
     ) {
       try {
         await orderService.receiptOrder(order.id)
-        toast.success('确认收货成功')
         fetchOrderDetail(order.id)
       } catch (error) {
         console.error(error)
-        toast.error('确认收货失败')
       }
     }
   }

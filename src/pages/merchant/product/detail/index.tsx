@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { toast } from 'sonner'
 import { ArrowLeft, Save, Loader2, DollarSign, Package, Layers, Type, Upload } from 'lucide-react'
 
 import { productService } from '@/features/product/service'
@@ -26,7 +25,7 @@ export default function ProductDetail() {
     resolver: zodResolver(ProductSchema),
     defaultValues: {
       name: '',
-      sku: '',
+
       description: '',
       price: undefined as unknown as number,
       stock: undefined as unknown as number,
@@ -52,7 +51,7 @@ export default function ProductDetail() {
           // 设置表单值
           form.reset({
             name: productRes.name,
-            sku: productRes.sku || '',
+
             description: productRes.description || '',
             price: Number(productRes.price),
             stock: productRes.stock,
@@ -62,7 +61,6 @@ export default function ProductDetail() {
         }
       } catch (error) {
         console.error(error)
-        toast.error('加载数据失败')
         navigate('/merchant/product/list')
       } finally {
         setIsLoading(false)
@@ -80,10 +78,8 @@ export default function ProductDetail() {
     try {
       const { url } = await commonApi.uploadFile(file)
       form.setValue('image_url', url, { shouldDirty: true })
-      toast.success('图片上传成功')
     } catch (error) {
       console.error(error)
-      toast.error('上传失败')
     } finally {
       setIsUploading(false)
     }
@@ -94,15 +90,12 @@ export default function ProductDetail() {
     try {
       if (isEdit && id) {
         await productService.update(id, data)
-        toast.success('商品更新成功')
       } else {
         await productService.create(data)
-        toast.success('商品创建成功')
       }
       navigate('/merchant/product/list')
     } catch (error) {
       console.error(error)
-      toast.error(isEdit ? '更新失败' : '创建失败')
     } finally {
       setIsSubmitting(false)
     }
@@ -206,15 +199,6 @@ export default function ProductDetail() {
                 {form.formState.errors.stock && (
                   <p className="text-xs text-rose-500">{form.formState.errors.stock.message}</p>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-zinc-700">SKU (可选)</label>
-                <input
-                  {...form.register('sku')}
-                  placeholder="例如：GM-MOUSE-001"
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-2 px-4 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
-                />
               </div>
             </div>
           </div>

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShieldCheck, X, CheckCircle2, CreditCard, Wallet, Smartphone, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
 import { orderService } from '@/features/order/service'
 
 interface PaymentModalProps {
@@ -47,14 +46,12 @@ export function PaymentModal({ isOpen, onClose, onSuccess, orderId, amount }: Pa
       await new Promise((resolve) => setTimeout(resolve, 1500))
       await orderService.payOrder(orderId)
       setIsSuccess(true)
-      toast.success('支付成功')
       setTimeout(() => {
         onSuccess()
         onClose()
       }, 2000)
     } catch (error) {
       console.error('Payment failed', error)
-      toast.error('支付失败，请稍后重试')
     } finally {
       setIsPaying(false)
     }
