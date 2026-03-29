@@ -97,8 +97,8 @@ export type RequestJsonOptions = {
   params?: Record<string, string | number | boolean | undefined | null>
   /** 请求体数据，会自动序列化为 JSON */
   body?: unknown
-  /** 是否携带认证令牌，默认为 true */
-  auth?: boolean
+  /** 认证模式：true=强制鉴权(默认)，false=不鉴权，'optional'=有 token 则带，无 token 不刷新 */
+  auth?: boolean | 'optional'
   /**
    * 是否显示成功提示。
    * 默认逻辑：POST/PUT/PATCH/DELETE 请求会自动显示后端返回的 message。
@@ -148,14 +148,15 @@ export async function requestJson<T>(path: string, options: RequestJsonOptions):
     headers['Content-Type'] = 'application/json'
   }
 
-  // 默认携带认证令牌（除非显式设置 auth: false）
-  if (options.auth !== false) {
+  // 默认强制鉴权（auth=true）；optional 模式下仅在本地已有 token 时携带
+  const authMode = options.auth ?? true
+  if (authMode !== false) {
     // 尝试获取 access_token
     let access_token = getAccessToken()
 
-    // 如果内存中没有 token 且是首次请求（非登录/注册页面），尝试刷新一次
+    // 强制鉴权模式下：如果内存中没有 token 且是首次请求（非登录/注册页面），尝试刷新一次
     // 这种情况常发生在页面刷新后，内存被清空，但 Cookie 还在
-    if (!access_token && !options._retry) {
+    if (!access_token && authMode === true && !options._retry) {
       access_token = await refreshAccessToken()
     }
 

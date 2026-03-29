@@ -23,6 +23,7 @@ const ACTION_LABEL: Record<string, string> = {
   enable_merchant: '启用商家',
   verify_merchant: '店铺操作',
   force_offline_product: '强制下架商品',
+  force_online_product: '强制上架商品',
   review_post: '审核帖子',
   delete_post: '删除帖子',
   delete_comment: '删除评论',

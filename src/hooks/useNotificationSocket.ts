@@ -1,5 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { getApiBaseUrl } from '@/shared/config/env'
+import { getAccessToken } from '@/shared/auth/token'
 import type { SystemNotification } from '@/features/notification/types'
 
 interface NotificationPayload {
@@ -15,16 +17,22 @@ export function useNotificationSocket(
   const reconnectTimeoutRef = useRef<number | null>(null)
   const connectRef = useRef<() => void>(() => {})
   const reconnectAttemptsRef = useRef(0)
+  const suppressReconnectRef = useRef(false)
   const onNewNotificationRef = useRef(onNewNotification)
   const [socket, setSocket] = useState<WebSocket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const location = useLocation()
+  const isAdminRoute = location.pathname.startsWith('/admin')
 
   useEffect(() => {
     onNewNotificationRef.current = onNewNotification
   }, [onNewNotification])
 
   const connect = useCallback(() => {
+    if (isAdminRoute) return
     if (!userId) return
+    const token = getAccessToken()
+    if (!token) return
     if (
       socketRef.current &&
       (socketRef.current.readyState === WebSocket.OPEN ||
@@ -53,7 +61,7 @@ export function useNotificationSocket(
     if (!normalizedWsBase.endsWith('/api')) {
       normalizedWsBase = `${normalizedWsBase}/api`
     }
-    const wsUrl = `${normalizedWsBase}/notifications/ws/${userId}`
+    const wsUrl = `${normalizedWsBase}/notifications/ws/${userId}?token=${encodeURIComponent(token)}`
 
     const socket = new WebSocket(wsUrl)
     socketRef.current = socket
@@ -83,6 +91,11 @@ export function useNotificationSocket(
     socket.onclose = () => {
       console.log('[WebSocket] Notification connection closed')
       setIsConnected(false)
+      setSocket(null)
+      if (suppressReconnectRef.current) {
+        suppressReconnectRef.current = false
+        return
+      }
       reconnectAttemptsRef.current += 1
       const delay = Math.min(30_000, 1_000 * 2 ** (reconnectAttemptsRef.current - 1))
       // 尝试自动重连
@@ -95,13 +108,24 @@ export function useNotificationSocket(
       console.error('[WebSocket] Notification error', err)
       setIsConnected(false)
     }
-  }, [userId])
+  }, [isAdminRoute, userId])
 
   useEffect(() => {
     connectRef.current = connect
   }, [connect])
 
   useEffect(() => {
+    if (isAdminRoute) {
+      suppressReconnectRef.current = true
+      if (socketRef.current) {
+        socketRef.current.close()
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
+      reconnectAttemptsRef.current = 0
+      return
+    }
     const timeoutId = window.setTimeout(() => {
       connect()
     }, 0)
@@ -120,7 +144,7 @@ export function useNotificationSocket(
       }
       reconnectAttemptsRef.current = 0
     }
-  }, [connect])
+  }, [connect, isAdminRoute])
 
   return {
     socket,

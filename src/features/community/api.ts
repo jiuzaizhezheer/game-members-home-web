@@ -19,14 +19,14 @@ export const communityApi = {
     })
     return requestJson<GroupListOut>(`/communities/groups?${params.toString()}`, {
       method: 'GET',
-      auth: false,
+      auth: 'optional',
     })
   },
 
   getGroupDetail: async (groupId: string) => {
     return requestJson<GroupDetailOut>(`/communities/groups/${groupId}`, {
       method: 'GET',
-      auth: false,
+      auth: 'optional',
     })
   },
 

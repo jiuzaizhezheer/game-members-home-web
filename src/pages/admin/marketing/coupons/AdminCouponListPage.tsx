@@ -94,10 +94,6 @@ export default function AdminCouponListPage() {
             className="w-full rounded-xl border-zinc-200 py-2.5 pl-10 pr-4 text-sm outline-none ring-rose-500/20 transition-all focus:border-rose-500 focus:ring-4"
           />
         </div>
-        <button className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50">
-          <Search size={18} />
-          筛选
-        </button>
       </div>
 
       {/* List */}

@@ -25,21 +25,25 @@ export const cartService = {
 
   /** 添加商品到购物车 */
   async addItem(payload: CartItemAddIn): Promise<void> {
-    return await cartApi.addItem(payload)
+    await cartApi.addItem(payload)
+    window.dispatchEvent(new CustomEvent('cart-refresh'))
   },
 
   /** 更新购物车商品数量 */
   async updateItem(id: string, payload: CartItemUpdateIn): Promise<void> {
-    return await cartApi.updateItem(id, payload)
+    await cartApi.updateItem(id, payload)
+    window.dispatchEvent(new CustomEvent('cart-refresh'))
   },
 
   /** 移除购物车商品 */
   async removeItem(id: string): Promise<void> {
-    return await cartApi.removeItem(id)
+    await cartApi.removeItem(id)
+    window.dispatchEvent(new CustomEvent('cart-refresh'))
   },
 
   /** 清空指定购物车 */
   async clearCart(): Promise<void> {
-    return await cartApi.clearCart()
+    await cartApi.clearCart()
+    window.dispatchEvent(new CustomEvent('cart-refresh'))
   },
 }

@@ -45,6 +45,20 @@ export default function Navbar() {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const confirm = useConfirm()
+  const navIconSize = 16
+
+  const refreshCartCount = useCallback(async () => {
+    if (!isAuthenticated) {
+      setCartCount(0)
+      return
+    }
+    try {
+      const cart = await cartService.getMyCart()
+      setCartCount(cart.total_quantity)
+    } catch {
+      setCartCount(0)
+    }
+  }, [isAuthenticated])
 
   const requestUnreadCounts = useCallback(async () => {
     if (!isAuthenticated) return null
@@ -68,23 +82,29 @@ export default function Navbar() {
   }, [isAuthenticated])
 
   useEffect(() => {
-    if (isAuthenticated) {
-      cartService
-        .getMyCart()
-        .then((cart) => setCartCount(cart.total_quantity))
-        .catch(() => setCartCount(0))
+    if (!isAuthenticated) return
 
-      requestUnreadCounts()
-        .then((data) => {
-          if (!data) return
-          setUnreadMessageCount(data.msgCount)
-          setUnreadNotificationCount(data.notifCount.count)
-        })
-        .catch((e) => {
-          console.error('Failed to fetch unread counts', e)
-        })
-    }
+    cartService
+      .getMyCart()
+      .then((cart) => setCartCount(cart.total_quantity))
+      .catch(() => setCartCount(0))
+
+    requestUnreadCounts()
+      .then((data) => {
+        if (!data) return
+        setUnreadMessageCount(data.msgCount)
+        setUnreadNotificationCount(data.notifCount.count)
+      })
+      .catch((e) => {
+        console.error('Failed to fetch unread counts', e)
+      })
   }, [isAuthenticated, location.pathname, requestUnreadCounts]) // Refresh on path change to keep it somewhat updated
+
+  // 监听购物车刷新事件
+  useEffect(() => {
+    window.addEventListener('cart-refresh', refreshCartCount)
+    return () => window.removeEventListener('cart-refresh', refreshCartCount)
+  }, [refreshCartCount])
 
   // WebSocket 实时通知
   const handleNewNotification = useCallback(
@@ -160,18 +180,18 @@ export default function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-5">
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 text-sm font-medium transition-colors ${
                     location.pathname.startsWith(link.path)
                       ? 'text-indigo-600'
                       : 'text-zinc-600 hover:text-zinc-900'
                   }`}
                 >
-                  <link.icon size={18} />
+                  <link.icon size={navIconSize} />
                   {link.label}
                 </Link>
               ))}
@@ -181,14 +201,17 @@ export default function Navbar() {
               {/* Cart */}
               <Link
                 to="/member/cart"
-                className="relative rounded-full p-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+                className="flex items-center gap-2 rounded-full px-2 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
               >
-                <ShoppingCart className="h-5 w-5" />
-                {displayCartCount > 0 && (
-                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white ring-2 ring-white">
-                    {displayCartCount > 99 ? '99+' : displayCartCount}
-                  </span>
-                )}
+                <span className="relative">
+                  <ShoppingCart size={navIconSize} />
+                  {displayCartCount > 0 && (
+                    <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                      {displayCartCount > 99 ? '99+' : displayCartCount}
+                    </span>
+                  )}
+                </span>
+                <span>购物车</span>
               </Link>
 
               {/* User Menu */}
@@ -198,25 +221,26 @@ export default function Navbar() {
                   <div className="h-4 w-16 animate-pulse rounded bg-zinc-200 hidden lg:block" />
                 </div>
               ) : isAuthenticated && user ? (
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-5">
                   <Link
                     to="/member/orders"
-                    className={`text-sm font-medium transition-colors ${location.pathname === '/member/orders' ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
+                    className={`flex items-center gap-2 text-sm font-medium transition-colors ${location.pathname === '/member/orders' ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
                   >
+                    <Package size={navIconSize} />
                     我的订单
                   </Link>
                   <Link
                     to="/member/favorites"
-                    className={`flex items-center gap-1 text-sm font-medium transition-colors ${location.pathname === '/member/favorites' ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
+                    className={`flex items-center gap-2 text-sm font-medium transition-colors ${location.pathname === '/member/favorites' ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
                   >
-                    <Heart size={15} />
+                    <Heart size={navIconSize} />
                     收藏
                   </Link>
                   <Link
                     to="/member/messages"
-                    className={`relative flex items-center gap-1 text-sm font-medium transition-colors ${location.pathname.startsWith('/member/messages') ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
+                    className={`relative flex items-center gap-2 text-sm font-medium transition-colors ${location.pathname.startsWith('/member/messages') ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
                   >
-                    <MessageSquare size={15} />
+                    <MessageSquare size={navIconSize} />
                     互动
                     {unreadMessageCount > 0 && (
                       <span className="absolute -right-3 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
@@ -226,9 +250,9 @@ export default function Navbar() {
                   </Link>
                   <Link
                     to="/member/notifications"
-                    className={`relative flex items-center gap-1 text-sm font-medium transition-colors ${location.pathname.startsWith('/member/notifications') ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
+                    className={`relative flex items-center gap-2 text-sm font-medium transition-colors ${location.pathname.startsWith('/member/notifications') ? 'text-indigo-600' : 'text-zinc-600 hover:text-zinc-900'}`}
                   >
-                    <Bell size={15} />
+                    <Bell size={navIconSize} />
                     通知
                     {unreadNotificationCount > 0 && (
                       <span className="absolute -right-3 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
@@ -338,7 +362,7 @@ export default function Navbar() {
                         : 'text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800'
                     }`}
                   >
-                    <link.icon size={18} />
+                    <link.icon size={navIconSize} />
                     {link.label}
                   </Link>
                 ))}
@@ -349,7 +373,7 @@ export default function Navbar() {
                   className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
                 >
                   <div className="flex items-center gap-3">
-                    <ShoppingCart size={18} />
+                    <ShoppingCart size={navIconSize} />
                     购物车
                   </div>
                   {displayCartCount > 0 && (
@@ -366,7 +390,7 @@ export default function Navbar() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${location.pathname === '/member/orders' ? 'bg-indigo-50 text-indigo-600' : 'text-zinc-600 hover:bg-zinc-50'}`}
                 >
-                  <Package size={18} />
+                  <Package size={navIconSize} />
                   我的订单
                 </Link>
 
@@ -375,7 +399,7 @@ export default function Navbar() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${location.pathname === '/member/favorites' ? 'bg-indigo-50 text-indigo-600' : 'text-zinc-600 hover:bg-zinc-50'}`}
                 >
-                  <Heart size={18} />
+                  <Heart size={navIconSize} />
                   我的收藏
                 </Link>
 
@@ -393,7 +417,7 @@ export default function Navbar() {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
                     >
-                      <User size={18} />
+                      <User size={navIconSize} />
                       个人中心 ({user.username})
                     </Link>
                     <button
@@ -403,7 +427,7 @@ export default function Navbar() {
                       }}
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50 dark:text-rose-500 dark:hover:bg-rose-500/10"
                     >
-                      <User size={18} className="opacity-0" />
+                      <User size={navIconSize} className="opacity-0" />
                       退出登录
                     </button>
                   </>

@@ -30,9 +30,10 @@ const CouponCard: React.FC<CouponCardProps> = ({
     variant === 'owned' ? userCoupon?.status === 'expired' : coupon.display_status === 'expired'
   const isUsed = userCoupon?.status === 'used'
   const isInactive = coupon.status === 'inactive'
+  const isClaimed = coupon.is_claimed
 
   const canClaim =
-    variant === 'claim' && !disabled && !loading && coupon.display_status === 'active'
+    variant === 'claim' && !disabled && !loading && coupon.display_status === 'active' && !isClaimed
 
   return (
     <motion.div
@@ -42,7 +43,7 @@ const CouponCard: React.FC<CouponCardProps> = ({
       className={cn(
         'relative group overflow-hidden rounded-2xl border transition-all duration-300',
         'bg-white/80 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.04)]',
-        isExpired || isUsed || isInactive
+        isExpired || isUsed || isInactive || isClaimed
           ? 'grayscale opacity-75 border-zinc-200'
           : 'border-zinc-100 hover:border-indigo-100/50',
       )}
@@ -52,7 +53,7 @@ const CouponCard: React.FC<CouponCardProps> = ({
         <div
           className={cn(
             'w-28 flex flex-col items-center justify-center p-4 border-r border-dashed border-zinc-100 relative',
-            isExpired || isUsed || isInactive ? 'bg-zinc-50' : 'bg-indigo-50/30',
+            isExpired || isUsed || isInactive || isClaimed ? 'bg-zinc-50' : 'bg-indigo-50/30',
           )}
         >
           {/* 装饰性半圆 */}
@@ -149,11 +150,13 @@ const CouponCard: React.FC<CouponCardProps> = ({
 
               {variant === 'claim' && !canClaim && (
                 <span className="text-[11px] font-medium text-zinc-400">
-                  {coupon.display_status === 'pending'
-                    ? '未开始'
-                    : coupon.display_status === 'expired'
-                      ? '已收罄'
-                      : '不可领'}
+                  {isClaimed
+                    ? '已领取'
+                    : coupon.display_status === 'pending'
+                      ? '未开始'
+                      : coupon.display_status === 'expired'
+                        ? '已收罄'
+                        : '不可领'}
                 </span>
               )}
             </div>

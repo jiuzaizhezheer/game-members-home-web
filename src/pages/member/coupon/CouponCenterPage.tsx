@@ -30,6 +30,8 @@ const CouponCenterPage: React.FC = () => {
     try {
       setClaimingId(couponId)
       await couponApi.claim(couponId)
+      // 领取成功后，更新本地状态标记为已领取
+      setCoupons((prev) => prev.map((c) => (c.id === couponId ? { ...c, is_claimed: true } : c)))
     } catch (error) {
       console.error(error)
     } finally {

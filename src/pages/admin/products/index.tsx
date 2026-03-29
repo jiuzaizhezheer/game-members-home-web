@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Package, Search, Filter, Eye, PackageSearch, Loader2 } from 'lucide-react'
+import { Package, Search, Filter, Eye, EyeOff, PackageSearch, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { adminApi } from '@/features/admin/api'
 import type { AdminProductItem } from '@/features/admin/types'
@@ -59,6 +59,27 @@ export default function AdminProductsPage() {
     try {
       await adminApi.forceOfflineProduct(product.id)
       setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, status: 'off' } : p)))
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const handleForceOnline = async (product: AdminProductItem) => {
+    if (product.status === 'on') return
+    if (
+      !(await confirm({
+        title: '恢复上架',
+        description: `确定要恢复商品 "${product.name}" 上架吗？`,
+        confirmText: '恢复上架',
+        cancelText: '取消',
+        variant: 'default',
+      }))
+    )
+      return
+
+    try {
+      await adminApi.forceOnlineProduct(product.id)
+      setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, status: 'on' } : p)))
     } catch (error) {
       console.error(error)
     }
@@ -196,13 +217,21 @@ export default function AdminProductsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {product.status === 'on' && (
+                      {product.status === 'on' ? (
                         <button
                           onClick={() => handleForceOffline(product)}
                           className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-500 ml-auto"
                           title="强制下架"
                         >
                           <Eye size={16} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleForceOnline(product)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-emerald-50 hover:text-emerald-500 ml-auto"
+                          title="恢复上架"
+                        >
+                          <EyeOff size={16} />
                         </button>
                       )}
                     </td>

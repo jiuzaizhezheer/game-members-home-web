@@ -165,6 +165,11 @@ export const adminApi = {
     await requestJson<void>(`/admins/products/${id}/offline`, { method: 'PATCH' })
   },
 
+  /** 强制上架商品 */
+  async forceOnlineProduct(id: string): Promise<void> {
+    await requestJson<void>(`/admins/products/${id}/online`, { method: 'PATCH' })
+  },
+
   // --- 内容审核 ---
 
   /** 获取全平台帖子列表 */

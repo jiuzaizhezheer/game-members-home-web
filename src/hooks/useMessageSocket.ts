@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { getAccessToken } from '@/shared/auth/token'
 import { getApiBaseUrl } from '@/shared/config/env'
 
@@ -21,15 +22,19 @@ export function useMessageSocket(onNewMessage: (data: MessagePushData) => void) 
   const reconnectTimeoutRef = useRef<number | null>(null)
   const connectRef = useRef<() => void>(() => {})
   const reconnectAttemptsRef = useRef(0)
+  const suppressReconnectRef = useRef(false)
   const onNewMessageRef = useRef(onNewMessage)
   const [socket, setSocket] = useState<WebSocket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const location = useLocation()
+  const isAdminRoute = location.pathname.startsWith('/admin')
 
   useEffect(() => {
     onNewMessageRef.current = onNewMessage
   }, [onNewMessage])
 
   const connect = useCallback(() => {
+    if (isAdminRoute) return
     const token = getAccessToken()
     if (!token) return
 
@@ -89,6 +94,11 @@ export function useMessageSocket(onNewMessage: (data: MessagePushData) => void) 
 
     nextSocket.onclose = () => {
       setIsConnected(false)
+      setSocket(null)
+      if (suppressReconnectRef.current) {
+        suppressReconnectRef.current = false
+        return
+      }
       reconnectAttemptsRef.current += 1
       const delay = Math.min(30_000, 1_000 * 2 ** (reconnectAttemptsRef.current - 1))
       reconnectTimeoutRef.current = window.setTimeout(() => {
@@ -99,13 +109,24 @@ export function useMessageSocket(onNewMessage: (data: MessagePushData) => void) 
     nextSocket.onerror = () => {
       setIsConnected(false)
     }
-  }, [])
+  }, [isAdminRoute])
 
   useEffect(() => {
     connectRef.current = connect
   }, [connect])
 
   useEffect(() => {
+    if (isAdminRoute) {
+      suppressReconnectRef.current = true
+      if (socketRef.current) {
+        socketRef.current.close()
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
+      reconnectAttemptsRef.current = 0
+      return
+    }
     const timeoutId = window.setTimeout(() => {
       connect()
     }, 0)
@@ -130,7 +151,7 @@ export function useMessageSocket(onNewMessage: (data: MessagePushData) => void) 
       }
       reconnectAttemptsRef.current = 0
     }
-  }, [connect])
+  }, [connect, isAdminRoute])
 
   return {
     socket,

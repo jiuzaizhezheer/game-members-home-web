@@ -69,6 +69,7 @@ export interface CouponOut extends CouponBase {
   issued_count: number
   status: 'active' | 'inactive'
   display_status: 'active' | 'inactive' | 'pending' | 'expired'
+  is_claimed?: boolean
   created_at: string
   updated_at: string
 }
