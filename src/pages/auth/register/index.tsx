@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Mail,
@@ -41,6 +41,8 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     setValue,
+    getValues,
+    trigger,
     formState: { errors, isSubmitting },
   } = useForm<AuthRegisterIn>({
     resolver: zodResolver(AuthRegisterSchema),
@@ -50,6 +52,7 @@ export default function RegisterPage() {
       password: '',
       role: defaultRole,
       captcha_id: '',
+      image_captcha_code: '',
       captcha_code: '',
     },
   })
@@ -66,6 +69,23 @@ export default function RegisterPage() {
   const [isSelectOpen, setIsSelectOpen] = useState(false)
   /** 密码是否可见 */
   const [showPassword, setShowPassword] = useState(false)
+  /** 是否已发送邮件验证码 */
+  const [isEmailSent, setIsEmailSent] = useState(false)
+  /** 倒计时 */
+  const [countdown, setCountdown] = useState(0)
+  /** 图置验证码请求状态 */
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
+
+  // 倒计时逻辑
+  useEffect(() => {
+    let timer: number | undefined
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1)
+      }, 1000)
+    }
+    return () => clearInterval(timer)
+  }, [countdown])
 
   // 自定义角色图标组件
   const RoleIcon = ROLE_ICONS[role]
@@ -80,15 +100,48 @@ export default function RegisterPage() {
     setCaptchaLoading(true)
     try {
       const data = await authService.getCaptcha()
+      // 注意：初始获取的是图形验证码的 ID
       setValue('captcha_id', data.id)
       setCaptchaImage(data.image)
-      setValue('captcha_code', '') // 刷新后清空输入
+      setValue('image_captcha_code', '') // 刷新后清空输入
     } catch (err) {
       console.error('Failed to fetch captcha:', err)
     } finally {
       setCaptchaLoading(false)
     }
   }, [setValue])
+
+  /**
+   * 发送邮件验证码
+   */
+  const handleSendEmail = async () => {
+    const { email, captcha_id, image_captcha_code } = getValues()
+
+    if (!email || !captcha_id || !image_captcha_code) {
+      // 触发 RHF 的校验
+      trigger(['email', 'image_captcha_code'])
+      return
+    }
+
+    setIsSendingEmail(true)
+    try {
+      const data = await authService.sendEmailCaptcha({
+        email,
+        image_captcha_id: captcha_id,
+        image_captcha_code,
+      })
+      // 发送成功后，更新 captcha_id 为邮件验证码 ID
+      setValue('captcha_id', data.id)
+      setIsEmailSent(true)
+      setCountdown(60)
+    } catch (err) {
+      console.error('Failed to send email captcha:', err)
+      // 发送失败需刷新图形验证码
+      fetchCaptcha()
+    } finally {
+      setIsSendingEmail(false)
+    }
+  }
 
   /**
    * 处理注册表单提交
@@ -276,51 +329,106 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* 验证码输入 */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-zinc-700">验证码</div>
-                {errors.captcha_code && (
-                  <span className="text-xs text-rose-500">{errors.captcha_code.message}</span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-400">
-                    <KeyRound size={20} />
-                  </div>
-                  <input
-                    {...register('captcha_code')}
-                    type="text"
-                    autoComplete="off"
-                    maxLength={6}
-                    placeholder="请输入验证码"
-                    className={`h-10 w-full rounded-xl bg-zinc-50 pl-12 pr-4 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ${errors.captcha_code ? 'ring-rose-200 focus:ring-rose-500/20' : 'ring-black/5'}`}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={fetchCaptcha}
-                  disabled={captchaLoading}
-                  className="group relative flex h-10 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-black/5 transition-all hover:bg-zinc-100 active:scale-95 disabled:opacity-50"
-                  title="点击刷新验证码"
-                >
-                  {captchaLoading ? (
-                    <RefreshCw size={20} className="animate-spin text-zinc-400" />
-                  ) : captchaImage ? (
-                    <img
-                      src={captchaImage}
-                      alt="captcha"
-                      className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
-                    />
-                  ) : (
-                    <span className="text-xs font-medium text-zinc-500 transition-colors group-hover:text-zinc-900">
-                      获取验证码
+            {/* 验证码区域：双重验证逻辑 */}
+            {!isEmailSent ? (
+              /* 第一阶段：填写图形验证码并发送邮件 */
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium text-zinc-700">图形验证码</div>
+                  {errors.image_captcha_code && (
+                    <span className="text-xs text-rose-500">
+                      {errors.image_captcha_code.message}
                     </span>
                   )}
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-400">
+                      <KeyRound size={20} />
+                    </div>
+                    <input
+                      {...register('image_captcha_code')}
+                      type="text"
+                      autoComplete="off"
+                      maxLength={6}
+                      placeholder="图中的文字"
+                      className={`h-10 w-full rounded-xl bg-zinc-50 pl-12 pr-4 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ${errors.image_captcha_code ? 'ring-rose-200 focus:ring-rose-500/20' : 'ring-black/5'}`}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fetchCaptcha}
+                    disabled={captchaLoading}
+                    className="group relative flex h-10 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-black/5 transition-all hover:bg-zinc-100 active:scale-95 disabled:opacity-50"
+                  >
+                    {captchaLoading ? (
+                      <RefreshCw size={20} className="animate-spin text-zinc-400" />
+                    ) : captchaImage ? (
+                      <img
+                        src={captchaImage}
+                        alt="captcha"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xs">获取中...</span>
+                    )}
+                  </button>
+                </div>
+                {/* 发送邮件按钮 */}
+                <button
+                  type="button"
+                  onClick={handleSendEmail}
+                  disabled={isSendingEmail}
+                  className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 bg-white text-sm font-medium text-zinc-600 transition-all hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-50"
+                >
+                  {isSendingEmail ? (
+                    <RefreshCw size={16} className="animate-spin" />
+                  ) : (
+                    <Mail size={16} />
+                  )}
+                  获取邮件验证码
                 </button>
               </div>
-            </div>
+            ) : (
+              /* 第二阶段：填写邮件中的 6 位验证码 */
+              <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium text-zinc-700">邮件验证码</div>
+                  {errors.captcha_code && (
+                    <span className="text-xs text-rose-500">{errors.captcha_code.message}</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-400">
+                      <KeyRound size={20} />
+                    </div>
+                    <input
+                      {...register('captcha_code')}
+                      type="text"
+                      autoComplete="off"
+                      maxLength={6}
+                      placeholder="邮件中的6位数字"
+                      className={`h-10 w-full rounded-xl bg-zinc-50 pl-12 pr-4 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 ring-1 ${errors.captcha_code ? 'ring-rose-200 focus:ring-rose-500/20' : 'ring-black/5'}`}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={countdown > 0 || isSendingEmail}
+                    onClick={() => {
+                      setIsEmailSent(false)
+                      fetchCaptcha()
+                    }}
+                    className="flex h-10 px-4 items-center justify-center rounded-xl bg-zinc-50 text-xs font-medium text-zinc-500 ring-1 ring-black/5 hover:bg-zinc-100 disabled:text-zinc-400"
+                  >
+                    {countdown > 0 ? `${countdown}s 后重新发送` : '重新获取'}
+                  </button>
+                </div>
+                <p className="text-[11px] text-zinc-400 ml-1">
+                  验证码已发至您的邮箱，请在 5 分钟内完成填写
+                </p>
+              </div>
+            )}
 
             {/* 提交按钮 */}
             <div className="pt-2">

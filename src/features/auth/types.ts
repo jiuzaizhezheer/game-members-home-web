@@ -6,6 +6,18 @@ export type CaptchaOut = {
   image: string
 }
 
+/** 邮件验证码请求 */
+export type EmailCaptchaIn = {
+  email: string
+  image_captcha_id: string
+  image_captcha_code: string
+}
+
+/** 邮件验证码响应 */
+export type EmailCaptchaOut = {
+  id: string
+}
+
 /** Access Token */
 export type AccessTokenOut = {
   access_token: string
@@ -27,7 +39,8 @@ export const AuthRegisterSchema = z.object({
     message: '请选择正确的角色',
   }),
   captcha_id: z.string().length(36, { message: '无效的验证码ID' }),
-  captcha_code: z.string().length(6, { message: '验证码必须是6位' }),
+  image_captcha_code: z.string().optional(),
+  captcha_code: z.string().length(6, { message: '邮箱验证码必须是6位' }),
 })
 
 /** 登录校验 Schema */
