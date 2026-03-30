@@ -370,7 +370,7 @@ export default function RegisterPage() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="text-xs">获取中...</span>
+                      <span className="text-xs">点击获取</span>
                     )}
                   </button>
                 </div>
