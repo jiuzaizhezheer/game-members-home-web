@@ -1,5 +1,12 @@
 import { requestJson } from '@/shared/api/http'
-import type { AuthLoginIn, AuthRegisterIn, AccessTokenOut, CaptchaOut } from '@/features/auth/types'
+import type {
+  AuthLoginIn,
+  AuthRegisterIn,
+  AccessTokenOut,
+  CaptchaOut,
+  EmailCaptchaIn,
+  EmailCaptchaOut,
+} from '@/features/auth/types'
 
 export const authApi = {
   /**
@@ -8,6 +15,17 @@ export const authApi = {
   async getCaptcha(): Promise<CaptchaOut> {
     return await requestJson<CaptchaOut>('/auths/captcha', {
       method: 'GET',
+      auth: false,
+    })
+  },
+
+  /**
+   * 发送邮件验证码
+   */
+  async sendEmailCaptcha(payload: EmailCaptchaIn): Promise<EmailCaptchaOut> {
+    return await requestJson<EmailCaptchaOut>('/auths/captcha/email', {
+      method: 'POST',
+      body: payload,
       auth: false,
     })
   },
