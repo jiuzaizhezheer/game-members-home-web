@@ -158,7 +158,7 @@ export default function AdminCommunityPage() {
             onClick={() => !submitting && setIsCreateModalOpen(false)}
           />
           <div className="relative w-full max-w-md animate-in zoom-in-95 duration-200 rounded-3xl bg-white p-8 shadow-2xl">
-            <h2 className="mb-6 text-xl font-bold text-zinc-900 text-center">开启新能量圈</h2>
+            <h2 className="mb-6 text-xl font-bold text-zinc-900 text-center">开启新话题圈</h2>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>

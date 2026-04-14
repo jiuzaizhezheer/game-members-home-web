@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { type MouseEvent, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, TicketPercent, Loader2, ArrowRight, Edit, Trash2, Calendar } from 'lucide-react'
+import { useConfirm } from '@/components/ui/confirmContext'
 import { promotionApi } from '@/features/marketing/api'
 import type { PromotionOut } from '@/features/marketing/types'
 import { PROMOTION_STATUS, DISCOUNT_TYPES } from '@/features/marketing/constants'
@@ -10,6 +11,7 @@ import { cn } from '@/shared/utils/cn'
 export default function PromotionListPage() {
   const [promotions, setPromotions] = useState<PromotionOut[]>([])
   const [loading, setLoading] = useState(true)
+  const confirm = useConfirm()
 
   useEffect(() => {
     fetchPromotions()
@@ -27,9 +29,16 @@ export default function PromotionListPage() {
     }
   }
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, title: string, e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
-    if (!confirm('确定要删除这个活动吗？')) return
+    const confirmed = await confirm({
+      title: '删除促销活动',
+      description: `确定要删除促销活动“${title}”吗？此操作不可恢复。`,
+      confirmText: '删除',
+      cancelText: '取消',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       await promotionApi.delete(id)
       fetchPromotions()
@@ -116,7 +125,7 @@ export default function PromotionListPage() {
                     <Edit size={16} />
                   </Link>
                   <button
-                    onClick={(e) => handleDelete(promo.id, e)}
+                    onClick={(e) => handleDelete(promo.id, promo.title, e)}
                     className="rounded-full p-2 text-zinc-400 hover:bg-rose-50 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Trash2 size={16} />

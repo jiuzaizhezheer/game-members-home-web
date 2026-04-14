@@ -137,8 +137,15 @@ export default function Navbar() {
     e.preventDefault()
     if (searchValue.trim()) {
       navigate(`/member/home?keyword=${encodeURIComponent(searchValue.trim())}`)
-      setIsMobileMenuOpen(false)
+    } else {
+      navigate('/member/home')
     }
+    setIsMobileMenuOpen(false)
+  }
+
+  const handleClearSearch = () => {
+    setSearchValue('')
+    navigate('/member/home')
   }
 
   const NAV_LINKS = [
@@ -157,7 +164,7 @@ export default function Navbar() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-md shadow-indigo-200">
                 <Gamepad2 size={20} />
               </div>
-              <span className="font-bold text-zinc-900 hidden sm:block">玩家之家</span>
+              <span className="font-bold text-zinc-900 hidden sm:block"></span>
             </Link>
 
             {/* Desktop Search */}
@@ -168,8 +175,17 @@ export default function Navbar() {
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   placeholder="搜索游戏周边..."
-                  className="w-full rounded-full border border-zinc-200 bg-zinc-50 py-2 pl-4 pr-10 text-sm outline-none transition-all placeholder:text-zinc-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full rounded-full border border-zinc-200 bg-zinc-50 py-2 pl-4 pr-16 text-sm outline-none transition-all placeholder:text-zinc-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
                 />
+                {searchValue && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-9 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-200/50 hover:text-zinc-600 transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
                 <button
                   type="submit"
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-200/50 hover:text-zinc-600 transition-colors"

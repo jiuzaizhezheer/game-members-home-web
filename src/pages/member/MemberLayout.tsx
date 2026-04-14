@@ -26,7 +26,7 @@ export default function MemberLayout() {
       <footer className="border-t border-zinc-200 bg-white py-5 shrink-0">
         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            &copy; {new Date().getFullYear()} 玩家之家 (Game Members Home). All rights reserved.
+            &copy; {new Date().getFullYear()} (Game peripheral trading system). All rights reserved.
           </p>
         </div>
       </footer>

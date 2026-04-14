@@ -175,7 +175,7 @@ const GroupManagement = () => {
           />
           <div className="relative w-full max-w-md animate-in zoom-in-95 duration-200 rounded-3xl bg-white p-8 shadow-2xl">
             <h2 className="mb-6 text-xl font-bold text-zinc-900 text-center">
-              {editingGroup ? '编辑话题圈' : '开启新能量圈'}
+              {editingGroup ? '编辑话题圈' : '开启新话题圈'}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-5">
