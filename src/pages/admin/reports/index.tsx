@@ -28,6 +28,15 @@ const TARGET_LABEL: Record<ReportTargetType, string> = {
   product: '商品',
 }
 
+const REASON_LABEL: Record<string, string> = {
+  spam: '垃圾广告',
+  abuse: '辱骂攻击',
+  porn: '色情低俗',
+  illegal: '违法违规',
+  fraud: '诈骗信息',
+  other: '其他',
+}
+
 export default function AdminReportsPage() {
   const [items, setItems] = useState<AdminReportItemOut[]>([])
   const [total, setTotal] = useState(0)
@@ -194,7 +203,9 @@ export default function AdminReportsPage() {
                         <span className="text-xs text-zinc-400">{r.target_id.slice(0, 8)}...</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-zinc-600">{r.reason}</td>
+                    <td className="px-6 py-4 text-zinc-600">
+                      {REASON_LABEL[r.reason] || r.reason}
+                    </td>
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ring-inset ${
@@ -324,7 +335,9 @@ export default function AdminReportsPage() {
 
                     <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3">
                       <div className="text-xs font-bold text-zinc-500">原因</div>
-                      <div className="mt-1 text-sm text-zinc-900">{detail.report.reason}</div>
+                      <div className="mt-1 text-sm text-zinc-900">
+                        {REASON_LABEL[detail.report.reason] || detail.report.reason}
+                      </div>
                       {detail.report.description ? (
                         <div className="mt-2 text-sm text-zinc-600 whitespace-pre-wrap">
                           {detail.report.description}

@@ -1,4 +1,9 @@
 import { z } from 'zod'
+import {
+  CHINA_MOBILE_PHONE_MESSAGE,
+  isValidChinaMobilePhone,
+  normalizeChinaMobilePhone,
+} from '@/shared/utils/phone'
 
 /** 商家店铺信息 */
 export type MerchantOut = {
@@ -19,8 +24,11 @@ export const MerchantUpdateSchema = z.object({
     .max(128, { message: '店铺名称不能超过128个字符' }),
   contact_phone: z
     .string()
-    .length(11, { message: '联系电话必须是11位' })
-    .or(z.literal(''))
+    .trim()
+    .refine((value) => value === '' || isValidChinaMobilePhone(value), {
+      message: CHINA_MOBILE_PHONE_MESSAGE,
+    })
+    .transform((value) => (value === '' ? null : normalizeChinaMobilePhone(value)))
     .optional()
     .nullable(),
   shop_desc: z.string().optional().nullable(),

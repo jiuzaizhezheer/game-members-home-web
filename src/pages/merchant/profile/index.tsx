@@ -7,6 +7,7 @@ import { commonApi } from '@/features/common/api'
 import { merchantService } from '@/features/merchant/service'
 import { MerchantUpdateSchema, type MerchantUpdateIn } from '@/features/merchant/types'
 import { getFileUrl } from '@/shared/utils/file'
+import { toChinaMobileNationalNumber } from '@/shared/utils/phone'
 
 export default function MerchantSettings() {
   const [isLoading, setIsLoading] = useState(false)
@@ -36,7 +37,7 @@ export default function MerchantSettings() {
         setMerchantId(merchant.id)
         form.reset({
           shop_name: merchant.shop_name,
-          contact_phone: merchant.contact_phone || '',
+          contact_phone: toChinaMobileNationalNumber(merchant.contact_phone),
           shop_desc: merchant.shop_desc || '',
           logo_url: merchant.logo_url || '',
         })
@@ -178,7 +179,8 @@ export default function MerchantSettings() {
                   <input
                     {...form.register('contact_phone')}
                     type="tel"
-                    placeholder="客服/售后联系方式"
+                    inputMode="tel"
+                    placeholder="13800138001"
                     className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-2.5 pl-10 pr-4 outline-none transition-all placeholder:text-zinc-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
                   />
                 </div>

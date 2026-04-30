@@ -11,6 +11,7 @@ import {
 } from '@/features/address/types'
 import { useNavigate } from 'react-router-dom'
 import { useConfirm } from '@/components/ui/confirmContext'
+import { toChinaMobileNationalNumber } from '@/shared/utils/phone'
 
 export default function AddressListPage() {
   const navigate = useNavigate()
@@ -71,7 +72,7 @@ export default function AddressListPage() {
   const handleEdit = (addr: AddressOut) => {
     setEditingId(addr.id)
     setValue('receiver_name', addr.receiver_name)
-    setValue('phone', addr.phone)
+    setValue('phone', toChinaMobileNationalNumber(addr.phone))
     setValue('province', addr.province)
     setValue('city', addr.city)
     setValue('district', addr.district)
@@ -251,8 +252,10 @@ export default function AddressListPage() {
                     </label>
                     <input
                       {...register('phone')}
+                      type="tel"
+                      inputMode="tel"
                       className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                      placeholder="手机号"
+                      placeholder="13800138001"
                     />
                     {errors.phone && (
                       <p className="text-xs text-rose-500 ml-1">{errors.phone.message}</p>
