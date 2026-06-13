@@ -9,6 +9,7 @@ export const GroupItemOutSchema = z.object({
   member_count: z.number(),
   post_count: z.number(),
   is_joined: z.boolean(),
+  is_active: z.boolean().optional(),
   created_at: z.string(),
 })
 export type GroupItemOut = z.infer<typeof GroupItemOutSchema>

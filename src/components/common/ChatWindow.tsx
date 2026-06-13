@@ -8,11 +8,12 @@ import { getFileUrl } from '@/shared/utils/file'
 
 interface ChatWindowProps {
   partnerUserId: string
+  productId?: string | null
   role: 'member' | 'merchant'
   title?: string
 }
 
-export default function ChatWindow({ partnerUserId, role, title }: ChatWindowProps) {
+export default function ChatWindow({ partnerUserId, productId, role, title }: ChatWindowProps) {
   const navigate = useNavigate()
 
   const [messages, setMessages] = useState<MessageItemOut[]>([])
@@ -45,7 +46,7 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
     async (scroll = true) => {
       if (!partnerUserId) return
       try {
-        const res = await messageService.getMessages(partnerUserId)
+        const res = await messageService.getMessages(partnerUserId, undefined, undefined, productId)
         upsertMessages(res.items)
         setHasMore(res.has_more)
         if (scroll) {
@@ -57,31 +58,33 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
         setLoading(false)
       }
     },
-    [partnerUserId, scrollToBottom, upsertMessages],
+    [partnerUserId, productId, scrollToBottom, upsertMessages],
   )
 
   useMessageSocket((data) => {
     if (data.sender_id !== partnerUserId) return
+    if ((data.product_id || null) !== (productId || null)) return
 
     const nextItem: MessageItemOut = {
       id: data.id,
       sender_id: data.sender_id,
       content: data.content,
       content_type: data.content_type,
+      product_id: data.product_id || null,
       is_mine: false,
       created_at: data.created_at,
     }
     upsertMessages([nextItem])
     setTimeout(scrollToBottom, 50)
-    messageService.markAsRead(partnerUserId).catch(() => {})
+    messageService.markAsRead(partnerUserId, productId).catch(() => {})
   })
 
   useEffect(() => {
     fetchMessages()
     if (partnerUserId) {
-      messageService.markAsRead(partnerUserId).catch(() => {})
+      messageService.markAsRead(partnerUserId, productId).catch(() => {})
     }
-  }, [fetchMessages, partnerUserId])
+  }, [fetchMessages, partnerUserId, productId])
 
   const handleSend = async () => {
     const content = inputValue.trim()
@@ -91,6 +94,7 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
     try {
       await messageService.sendMessage({
         receiver_user_id: partnerUserId,
+        product_id: productId || undefined,
         content,
       })
       upsertMessages([
@@ -99,6 +103,7 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
           sender_id: 'me',
           content,
           content_type: 'text',
+          product_id: productId || null,
           is_mine: true,
           created_at: new Date().toISOString(),
         },
@@ -152,6 +157,7 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
     try {
       await messageService.sendMessage({
         receiver_user_id: partnerUserId,
+        product_id: productId || refProduct.id,
         content: JSON.stringify(refProduct),
         content_type: 'product_card',
       })
@@ -161,6 +167,7 @@ export default function ChatWindow({ partnerUserId, role, title }: ChatWindowPro
           sender_id: 'me',
           content: JSON.stringify(refProduct),
           content_type: 'product_card',
+          product_id: productId || refProduct.id,
           is_mine: true,
           created_at: new Date().toISOString(),
         },

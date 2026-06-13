@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Calendar,
   User,
@@ -27,7 +27,13 @@ const ACTION_LABEL: Record<string, string> = {
   review_post: '审核帖子',
   delete_post: '删除帖子',
   delete_comment: '删除评论',
+  delete_review: '删除评价',
+  handle_report: '处理举报',
   create_group: '创建社群',
+}
+
+function getActionLabel(action: string) {
+  return ACTION_LABEL[action] || '未知操作'
 }
 
 /** 目标类型颜色映射 */
@@ -49,7 +55,7 @@ export default function AdminLogsPage() {
   const [selectedLog, setSelectedLog] = useState<AdminLogItem | null>(null)
   const pageSize = 15
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setIsLoading(true)
       const res = await adminApi.getLogs({ page, page_size: pageSize })
@@ -60,11 +66,11 @@ export default function AdminLogsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [page, pageSize])
 
   useEffect(() => {
     fetchLogs()
-  }, [page])
+  }, [fetchLogs])
 
   const totalPages = Math.ceil(total / pageSize)
 
@@ -132,7 +138,7 @@ export default function AdminLogsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-600 ring-1 ring-inset ring-rose-100">
-                        {ACTION_LABEL[log.action] || log.action}
+                        {getActionLabel(log.action)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -265,7 +271,7 @@ function LogDetailModal({ log, onClose }: { log: AdminLogItem; onClose: () => vo
                   操作类型
                 </span>
                 <p className="mt-1 text-sm font-semibold text-zinc-900">
-                  {ACTION_LABEL[log.action] || log.action}
+                  {getActionLabel(log.action)}
                 </p>
               </div>
               <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4">

@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@vant/area-data": "^2.1.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "firebase": "^12.8.0",

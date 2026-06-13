@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -24,8 +25,19 @@ export function ShipmentModal({ isOpen, onClose, onConfirm, order }: ShipmentMod
     resolver: zodResolver(OrderShipInSchema),
     defaultValues: {
       courier_name: '顺丰快递',
+      tracking_no: '',
+      sender_address: '',
     },
   })
+
+  useEffect(() => {
+    if (!isOpen || !order) return
+    reset({
+      courier_name: '顺丰快递',
+      tracking_no: Date.now().toString(),
+      sender_address: '',
+    })
+  }, [isOpen, order, reset])
 
   const onSubmit = async (data: OrderShipIn) => {
     try {

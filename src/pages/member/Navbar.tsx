@@ -106,6 +106,12 @@ export default function Navbar() {
     return () => window.removeEventListener('cart-refresh', refreshCartCount)
   }, [refreshCartCount])
 
+  // 监听通知已读状态变化，刷新顶部通知角标
+  useEffect(() => {
+    window.addEventListener('notification-refresh', refreshUnreadNotificationCount)
+    return () => window.removeEventListener('notification-refresh', refreshUnreadNotificationCount)
+  }, [refreshUnreadNotificationCount])
+
   // WebSocket 实时通知
   const handleNewNotification = useCallback(
     (newNotif: { title: string; content: string; link?: string | null }) => {
@@ -148,9 +154,33 @@ export default function Navbar() {
     navigate('/member/home')
   }
 
+  const confirmLoginNavigation = async (targetPath: string) => {
+    if (isAuthenticated) {
+      navigate(targetPath)
+      return
+    }
+    const confirmed = await confirm({
+      title: '是否登录',
+      description: '登录后可继续使用该功能。',
+      confirmText: '去登录',
+      cancelText: '取消',
+      variant: 'default',
+    })
+    if (confirmed) {
+      navigate(`/auth/login?redirect=${encodeURIComponent(targetPath)}`)
+    }
+  }
+
+  const handleProtectedNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetPath: string) => {
+    if (isAuthenticated) return
+    e.preventDefault()
+    setIsMobileMenuOpen(false)
+    void confirmLoginNavigation(targetPath)
+  }
+
   const NAV_LINKS = [
     { label: '商城', path: '/member/home', icon: Gamepad2 },
-    { label: '领券', path: '/member/coupons', icon: Ticket },
+    { label: '领券', path: '/member/coupons', icon: Ticket, requiresLogin: true },
     { label: '社区', path: '/community', icon: MessageSquare },
   ]
 
@@ -201,6 +231,11 @@ export default function Navbar() {
                 <Link
                   key={link.path}
                   to={link.path}
+                  onClick={(e) => {
+                    if (link.requiresLogin) {
+                      handleProtectedNavClick(e, link.path)
+                    }
+                  }}
                   className={`flex items-center gap-2 text-sm font-medium transition-colors ${
                     location.pathname.startsWith(link.path)
                       ? 'text-indigo-600'
@@ -217,6 +252,7 @@ export default function Navbar() {
               {/* Cart */}
               <Link
                 to="/member/cart"
+                onClick={(e) => handleProtectedNavClick(e, '/member/cart')}
                 className="flex items-center gap-2 rounded-full px-2 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
               >
                 <span className="relative">
@@ -371,7 +407,13 @@ export default function Navbar() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={(e) => {
+                      if (link.requiresLogin) {
+                        handleProtectedNavClick(e, link.path)
+                        return
+                      }
+                      setIsMobileMenuOpen(false)
+                    }}
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
                       location.pathname.startsWith(link.path)
                         ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400'
@@ -385,7 +427,7 @@ export default function Navbar() {
 
                 <Link
                   to="/member/cart"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e) => handleProtectedNavClick(e, '/member/cart')}
                   className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
                 >
                   <div className="flex items-center gap-3">

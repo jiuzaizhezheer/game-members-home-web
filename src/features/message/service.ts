@@ -6,16 +6,21 @@ export const messageService = {
     return await messageApi.getConversations()
   },
 
-  async getMessages(partnerUserId: string, page?: number, pageSize?: number) {
-    return await messageApi.getMessages(partnerUserId, page, pageSize)
+  async getMessages(
+    partnerUserId: string,
+    page?: number,
+    pageSize?: number,
+    productId?: string | null,
+  ) {
+    return await messageApi.getMessages(partnerUserId, page, pageSize, productId)
   },
 
   async sendMessage(data: MessageSendIn) {
     return await messageApi.sendMessage(data)
   },
 
-  async markAsRead(partnerUserId: string) {
-    return await messageApi.markAsRead(partnerUserId)
+  async markAsRead(partnerUserId: string, productId?: string | null) {
+    return await messageApi.markAsRead(partnerUserId, productId)
   },
 
   async getUnreadCount() {

@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ShoppingCart,
   Heart,
-  Share2,
   Flag,
   Loader2,
   ArrowLeft,
@@ -154,7 +153,7 @@ export default function ProductDetailPage() {
     if (!product) return
 
     const targetId = product.merchant_user_id || product.merchant_id
-    navigate(`/member/messages/${targetId}`, {
+    navigate(`/member/messages/${targetId}?product_id=${product.id}`, {
       state: {
         refProduct: {
           id: product.id,
@@ -244,7 +243,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Wishlist/Share Floating Actions */}
+            {/* Wishlist/Report Floating Actions */}
             <div className="absolute top-3 right-3 flex flex-col gap-1.5">
               <motion.button
                 whileTap={{ scale: 0.85 }}
@@ -258,9 +257,6 @@ export default function ProductDetailPage() {
               >
                 <Heart size={16} fill={isFavorited ? 'currentColor' : 'none'} />
               </motion.button>
-              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-sm backdrop-blur-sm transition-all hover:bg-indigo-50 hover:text-indigo-500 dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:bg-zinc-700/90 dark:hover:text-indigo-400">
-                <Share2 size={16} />
-              </button>
               {authState.isAuthenticated && (
                 <button
                   onClick={() => setReportOpen(true)}

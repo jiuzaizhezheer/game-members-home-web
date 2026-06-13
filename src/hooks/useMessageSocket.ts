@@ -9,6 +9,7 @@ export interface MessagePushData {
   receiver_id: string
   content: string
   content_type: string
+  product_id?: string | null
   created_at: string
 }
 

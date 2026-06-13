@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit2, Star, Loader2, ArrowLeft, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { areaList } from '@vant/area-data'
 import { addressService } from '@/features/address/service'
 import {
   AddressCreateInSchema,
@@ -12,6 +13,40 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { useConfirm } from '@/components/ui/confirmContext'
 import { toChinaMobileNationalNumber } from '@/shared/utils/phone'
+
+type AreaOption = {
+  code: string
+  name: string
+}
+
+const selectClassName =
+  'w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60'
+
+const toAreaOptions = (areaMap: Record<string, string>): AreaOption[] =>
+  Object.entries(areaMap).map(([code, name]) => ({ code, name }))
+
+const provinceOptions = toAreaOptions(areaList.province_list)
+
+const getAreaCodeByName = (options: AreaOption[], name?: string | null) =>
+  options.find((option) => option.name === name)?.code
+
+const getCityOptions = (provinceName?: string | null) => {
+  const provinceCode = getAreaCodeByName(provinceOptions, provinceName)
+  if (!provinceCode) return []
+
+  return toAreaOptions(areaList.city_list).filter((option) =>
+    option.code.startsWith(provinceCode.slice(0, 2)),
+  )
+}
+
+const getDistrictOptions = (provinceName?: string | null, cityName?: string | null) => {
+  const cityCode = getAreaCodeByName(getCityOptions(provinceName), cityName)
+  if (!cityCode) return []
+
+  return toAreaOptions(areaList.county_list).filter((option) =>
+    option.code.startsWith(cityCode.slice(0, 4)),
+  )
+}
 
 export default function AddressListPage() {
   const navigate = useNavigate()
@@ -27,6 +62,7 @@ export default function AddressListPage() {
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<AddressCreateIn>({
     resolver: zodResolver(AddressCreateInSchema),
@@ -34,6 +70,10 @@ export default function AddressListPage() {
       is_default: false,
     },
   })
+  const selectedProvince = watch('province')
+  const selectedCity = watch('city')
+  const cityOptions = getCityOptions(selectedProvince)
+  const districtOptions = getDistrictOptions(selectedProvince, selectedCity)
 
   const fetchAddresses = useCallback(async () => {
     try {
@@ -131,7 +171,7 @@ export default function AddressListPage() {
         <button
           onClick={() => {
             setEditingId(null)
-            reset()
+            reset({ is_default: false })
             setIsFormOpen(true)
           }}
           className="flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition-all hover:bg-indigo-700 hover:scale-105 active:scale-95"
@@ -268,31 +308,71 @@ export default function AddressListPage() {
                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">
                       省份
                     </label>
-                    <input
-                      {...register('province')}
-                      className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                      placeholder="如：广东省"
-                    />
+                    <select
+                      {...register('province', {
+                        onChange: () => {
+                          setValue('city', '')
+                          setValue('district', null)
+                        },
+                      })}
+                      className={selectClassName}
+                    >
+                      <option value="">请选择省份</option>
+                      {provinceOptions.map((province) => (
+                        <option key={province.code} value={province.name}>
+                          {province.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.province && (
+                      <p className="text-xs text-rose-500 ml-1">{errors.province.message}</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">
                       城市
                     </label>
-                    <input
-                      {...register('city')}
-                      className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                      placeholder="如：深圳市"
-                    />
+                    <select
+                      {...register('city', {
+                        onChange: () => {
+                          setValue('district', null)
+                        },
+                      })}
+                      className={selectClassName}
+                      disabled={!selectedProvince}
+                    >
+                      <option value="">请选择城市</option>
+                      {cityOptions.map((city) => (
+                        <option key={city.code} value={city.name}>
+                          {city.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.city && (
+                      <p className="text-xs text-rose-500 ml-1">{errors.city.message}</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">
                       区县
                     </label>
-                    <input
-                      {...register('district')}
-                      className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                      placeholder="可选"
-                    />
+                    <select
+                      {...register('district', {
+                        setValueAs: (value) => value || null,
+                      })}
+                      className={selectClassName}
+                      disabled={!selectedCity || districtOptions.length === 0}
+                    >
+                      <option value="">请选择区县</option>
+                      {districtOptions.map((district) => (
+                        <option key={district.code} value={district.name}>
+                          {district.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.district && (
+                      <p className="text-xs text-rose-500 ml-1">{errors.district.message}</p>
+                    )}
                   </div>
                 </div>
 

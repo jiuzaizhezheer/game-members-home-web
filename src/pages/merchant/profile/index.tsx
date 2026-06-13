@@ -71,8 +71,13 @@ export default function MerchantSettings() {
   const onSubmit = async (data: MerchantUpdateIn) => {
     setIsSubmitting(true)
     try {
-      await merchantService.update(merchantId, data)
-      form.reset(data) // 重置 dirty 状态
+      const merchant = await merchantService.update(merchantId, data)
+      form.reset({
+        shop_name: merchant.shop_name,
+        contact_phone: toChinaMobileNationalNumber(merchant.contact_phone),
+        shop_desc: merchant.shop_desc || '',
+        logo_url: merchant.logo_url || '',
+      })
     } catch (error) {
       console.error(error)
     } finally {

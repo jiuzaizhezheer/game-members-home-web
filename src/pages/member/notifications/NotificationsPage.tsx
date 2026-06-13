@@ -34,10 +34,16 @@ export default function NotificationsPage() {
     fetchNotifications()
   }, [])
 
+  const refreshAfterReadChange = async () => {
+    setPage(1)
+    await fetchNotifications(1, false)
+    window.dispatchEvent(new CustomEvent('notification-refresh'))
+  }
+
   const handleMarkAsRead = async (id: string) => {
     try {
       await notificationApi.markAsRead(id)
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
+      await refreshAfterReadChange()
     } catch (error) {
       console.error('Failed to mark as read', error)
     }
@@ -46,15 +52,15 @@ export default function NotificationsPage() {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationApi.markAllAsRead()
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+      await refreshAfterReadChange()
     } catch (error) {
       console.error('Failed to mark all as read', error)
     }
   }
 
-  const handleNotificationClick = (notification: SystemNotification) => {
+  const handleNotificationClick = async (notification: SystemNotification) => {
     if (!notification.is_read) {
-      handleMarkAsRead(notification.id)
+      await handleMarkAsRead(notification.id)
     }
     if (notification.link) {
       navigate(notification.link)

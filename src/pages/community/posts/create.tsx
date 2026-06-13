@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom'
 import { Loader2, Image, X, Video, ChevronLeft, Zap } from 'lucide-react'
+import { toast } from 'sonner'
 import { communityApi } from '@/features/community/api'
 import type { GroupDetailOut } from '@/features/community/types'
 import { getFileUrl } from '@/shared/utils/file'
@@ -129,12 +130,20 @@ export default function CreatePostPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim() || !content.trim()) {
+    if (!title.trim()) {
+      toast.error('请填写帖子标题')
+      return
+    }
+    if (!content.trim()) {
+      toast.error('请填写帖子正文')
       return
     }
 
     const finalGroupId = group?.id || groupId
-    if (!finalGroupId) return
+    if (!finalGroupId) {
+      toast.error('没有找到要发布到的话题圈')
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -159,7 +168,8 @@ export default function CreatePostPage() {
     } catch (error) {
       const err = error as { response?: { data?: { message?: string } }; message?: string }
       const message = err.response?.data?.message || err.message || '发布失败，请稍后重试'
-      console.error(message)
+      toast.error(message)
+      console.error(error)
     } finally {
       setSubmitting(false)
     }

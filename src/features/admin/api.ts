@@ -96,11 +96,50 @@ export const adminApi = {
   },
 
   /** 创建社群话题圈 */
+  async getCommunityGroups(params?: {
+    page?: number
+    page_size?: number
+    is_active?: boolean | null
+  }): Promise<{ items: GroupItemOut[]; total: number }> {
+    const query = new URLSearchParams()
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.page_size) query.set('page_size', String(params.page_size))
+    if (params?.is_active !== undefined && params.is_active !== null) {
+      query.set('is_active', String(params.is_active))
+    }
+    const qs = query.toString()
+    return await requestJson<{ items: GroupItemOut[]; total: number }>(
+      `/admins/communities/groups${qs ? `?${qs}` : ''}`,
+      { method: 'GET' },
+    )
+  },
+
   async createCommunityGroup(data: GroupCreateIn): Promise<GroupItemOut> {
     return await requestJson<GroupItemOut>('/admins/communities/groups', {
       method: 'POST',
       body: data,
     })
+  },
+
+  /** 编辑社群话题圈 */
+  async updateCommunityGroup(id: string, data: Partial<GroupCreateIn>): Promise<GroupItemOut> {
+    return await requestJson<GroupItemOut>(`/admins/communities/groups/${id}`, {
+      method: 'PUT',
+      body: data,
+    })
+  },
+
+  /** 删除社群话题圈 */
+  async deleteCommunityGroup(id: string): Promise<void> {
+    await requestJson<void>(`/admins/communities/groups/${id}`, { method: 'DELETE' })
+  },
+
+  /** 上架/下架社群话题圈 */
+  async setCommunityGroupActive(id: string, isActive: boolean): Promise<GroupItemOut> {
+    return await requestJson<GroupItemOut>(
+      `/admins/communities/groups/${id}/status?is_active=${isActive}`,
+      { method: 'PATCH' },
+    )
   },
 
   // --- 用户管理 ---

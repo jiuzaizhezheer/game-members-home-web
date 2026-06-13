@@ -23,9 +23,10 @@ export default function MessageList({
     return role === 'member' ? '商家' : '买家'
   }
 
-  const handleNavigate = (partnerId: string) => {
+  const handleNavigate = (conv: ConversationItemOut) => {
     const prefix = role === 'member' ? '/member/messages' : '/merchant/messages'
-    navigate(`${prefix}/${partnerId}`)
+    const productQuery = conv.product_id ? `?product_id=${conv.product_id}` : ''
+    navigate(`${prefix}/${conv.partner_user_id}${productQuery}`)
   }
 
   if (loading) {
@@ -47,8 +48,8 @@ export default function MessageList({
         <div className="divide-y divide-zinc-100">
           {conversations.map((conv) => (
             <div
-              key={conv.partner_user_id}
-              onClick={() => handleNavigate(conv.partner_user_id)}
+              key={`${conv.partner_user_id}-${conv.product_id || 'general'}`}
+              onClick={() => handleNavigate(conv)}
               className="group flex cursor-pointer items-center gap-4 p-4 transition-colors hover:bg-zinc-50"
             >
               {/* Avatar */}
@@ -79,9 +80,16 @@ export default function MessageList({
               {/* Content */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="truncate text-sm font-semibold text-zinc-900">
-                    {getPartnerName(conv)}
-                  </h3>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-semibold text-zinc-900">
+                      {getPartnerName(conv)}
+                    </h3>
+                    {conv.product_name && (
+                      <p className="mt-0.5 truncate text-[11px] text-zinc-400">
+                        商品：{conv.product_name}
+                      </p>
+                    )}
+                  </div>
                   <span className="text-xs text-zinc-400">
                     {new Date(conv.last_message_at).toLocaleDateString()}
                   </span>
