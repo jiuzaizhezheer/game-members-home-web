@@ -1,6 +1,6 @@
-# Game Members Home Web
+# 游戏周边交易系统 Web
 
-「游戏会员之家」Web 前端项目，基于 Vite + React + TypeScript。前端以路由级页面（pages）组织视图，以业务域（features）组织数据访问与业务能力，并通过统一的 HTTP 封装与鉴权 token 管理对接后端。
+「游戏周边交易系统」Web 前端项目，基于 Vite + React + TypeScript。前端以路由级页面（pages）组织视图，以业务域（features）组织数据访问与业务能力，并通过统一的 HTTP 封装与鉴权 token 管理对接后端。
 
 ## 技术栈
 

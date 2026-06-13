@@ -68,7 +68,7 @@ export default function WelcomePage() {
           transition={{ duration: 0.5, delay: 0.8 }}
           className="mt-16 text-sm text-zinc-400"
         >
-          © 2026 Game Members Home. All rights reserved.
+          © 2026 Game Peripheral Trading System. All rights reserved.
         </motion.p>
       </div>
     </div>
